@@ -17,7 +17,7 @@
   - **Aceite:** `mvn -q test` executa um teste-trivial verde; `pom.xml` declara Java 17, JUnit 5 e Jackson; estrutura `src/main/java/com/reembolso/{cli,io,dominio,motor,materializacao}` e `tests/` criadas.
   - **Commit:** `<hash>`
 
-- [ ] **T-002** — Tipo monetário `Dinheiro` (BigDecimal, scale 2, HALF_UP)
+- [x] **T-002** — Tipo monetário `Dinheiro` (BigDecimal, scale 2, HALF_UP)
   - **Atende:** RN-010, AMB-011 (implementação; DT-001)
   - **Aceite:** testes `DinheiroTest`: `de("33.333")` → `33.33`; `de("0.005")` → `0.01`; adicionar/subtrair/comparar com precisão; `ZERO` existe; imutabilidade.
   - **Commit:**

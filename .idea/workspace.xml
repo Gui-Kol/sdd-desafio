@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="docs(plan): adiciona plano arquitetural e backlog de tarefas T-001 a T-0NN">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/specs/001-motor-reembolso/plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/specs/001-motor-reembolso/plan.md" afterDir="false" />
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-001): implementa estrutura base do motor e testes de validacao">
       <change beforePath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" beforeDir="false" afterPath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -28,10 +26,13 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Application.Main.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
@@ -70,7 +71,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="docs(spec): define especificacao inicial do motor de reembolso e registra decisoes" />
     <MESSAGE value="docs(plan): adiciona plano arquitetural e backlog de tarefas T-001 a T-0NN" />
-    <option name="LAST_COMMIT_MESSAGE" value="docs(plan): adiciona plano arquitetural e backlog de tarefas T-001 a T-0NN" />
+    <MESSAGE value="feat(T-001): implementa estrutura base do motor e testes de validacao" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(T-001): implementa estrutura base do motor e testes de validacao" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
