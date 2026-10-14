@@ -29,7 +29,7 @@
 
 ## Fase 2 — Regras de negócio (pipeline do motor, na ordem da spec §8)
 
-- [ ] **T-004** — RN-001 + RN-002: normalização de categoria e recusa de categoria fora da política
+- [x] **T-004** — RN-001 + RN-002: normalização de categoria e recusa de categoria fora da política
   - **Atende:** RN-001, RN-002, AMB-009
   - **Aceite:** testes `MotorReembolsoTest.rn001_caseInsensitive_alimentacaoReconhecida()` (entrada `"ALIMENTACAO"` ≡ alimentacao) e `rn002_coworking_recusada()` (d-005 análoga recusada com motivo "Categoria fora da política").
   - **Commit:**
