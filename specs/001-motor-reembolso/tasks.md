@@ -83,7 +83,7 @@
 
 ## Fase 4 — Saída e CLI
 
-- [ ] **T-014** — Materializar `Saida` e escrever JSON de saída (io/saida)
+- [x] **T-014** — Materializar `Saida` e escrever JSON de saída (io/saida)
   - **Atende:** spec §4 saída
   - **Aceite:** teste de integração `SaidaTest`: entrada pequena → JSON com `colaborador_id`, `competencia`, `total_solicitado`, `total_reembolsado`, `despesas[]` com os 5 campos; números serializados com 2 casas.
   - **Commit:**

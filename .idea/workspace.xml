@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-012): garante motivos obrigatorios e saida com duas casas decimais">
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="docs: exporta sessao 03 e atualiza progresso das tasks da fase 3">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" beforeDir="false" afterPath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/com/reembolso/motor/MotorReembolsoTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/tests/com/reembolso/motor/MotorReembolsoTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,7 +97,9 @@
     <MESSAGE value="feat(T-010): implementa agregacao diaria e corte por ordem de entrada" />
     <MESSAGE value="feat(T-011): implementa limite de hospedagem por lancamento" />
     <MESSAGE value="feat(T-012): garante motivos obrigatorios e saida com duas casas decimais" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(T-012): garante motivos obrigatorios e saida com duas casas decimais" />
+    <MESSAGE value="test(T-013): adiciona testes para casos de borda e tabela da spec" />
+    <MESSAGE value="docs: exporta sessao 03 e atualiza progresso das tasks da fase 3" />
+    <option name="LAST_COMMIT_MESSAGE" value="docs: exporta sessao 03 e atualiza progresso das tasks da fase 3" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
