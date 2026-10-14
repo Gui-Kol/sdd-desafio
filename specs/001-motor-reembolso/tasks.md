@@ -12,9 +12,9 @@
 
 ## Fase 1 — Fundação
 
-- [ ] **T-001** — Scaffold Maven + JDK 17 + JUnit 5 funcionando
+- [x] **T-001** — Scaffold Maven + JDK 17 + JUnit 5 funcionando
   - **Atende:** base das demais
-  - **Aceite:** `mvn -q test` executa um teste-trivial verde; `pom.xml` declara Java 17, JUnit 5 e Jackson; estrutura `src/main/java/com/reembolso/{cli,io,dominio,motor,materializacao}` e `src/test/java` criadas.
+  - **Aceite:** `mvn -q test` executa um teste-trivial verde; `pom.xml` declara Java 17, JUnit 5 e Jackson; estrutura `src/main/java/com/reembolso/{cli,io,dominio,motor,materializacao}` e `tests/` criadas.
   - **Commit:** `<hash>`
 
 - [ ] **T-002** — Tipo monetário `Dinheiro` (BigDecimal, scale 2, HALF_UP)

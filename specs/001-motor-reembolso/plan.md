@@ -122,6 +122,8 @@ Toda leitura de limite passa por `Politica.limite(categoria, emViagem)` — um �
 **Alternativa descartada:** picocli (ver tabela de stack).
 **Consequência:** zero dependência de arg-parsing; se surgir subcomando novo, a gente reavalia.
 
+> **Layout de testes:** os testes moram em `tests/` (espelhando pacotes), não em `src/test/java` — exigência da estrutura de entrega do enunciado; o `pom.xml` aponta `<testSourceDirectory>tests</testSourceDirectory>`.
+
 ## 6. Estratégia de testes
 
 - **Nível:** 80% unitário (motor + regras, puros), 15% integração (pipeline completo com JSON em memória), 5% ponta a ponta (CLI real com `exemplos/despesas-exemplo.json`, comparando totais).
