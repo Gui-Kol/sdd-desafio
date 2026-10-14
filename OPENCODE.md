@@ -1,9 +1,9 @@
-# CLAUDE.md
+# OPENCODE.md
 
-> Este arquivo é lido pelo Claude Code no início de toda sessão. É onde moram as
+> Este arquivo é lido pelo OPENCODE Code no início de toda sessão. É onde moram as
 > convenções que você não quer repetir em todo prompt.
-> Substitua os `<...>` e apague o que não usar. Mantenha curto — CLAUDE.md longo
-> é CLAUDE.md ignorado.
+> Substitua os `<...>` e apague o que não usar. Mantenha curto — OPENCODE.md longo
+> é OPENCODE.md ignorado.
 
 ## O projeto
 

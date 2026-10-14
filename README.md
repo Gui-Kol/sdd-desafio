@@ -26,7 +26,7 @@ Aula bônus de SDD, fechando a trilha:
 ```bash
 git clone https://github.com/<seu-usuario>/sdd-desafio.git
 cd sdd-desafio
-cp template/CLAUDE.md .
+cp template/OPENCODE.md .
 cp -r template/specs .
 cp -r template/docs .
 git add -A && git commit -m "chore: estrutura inicial a partir do template"
