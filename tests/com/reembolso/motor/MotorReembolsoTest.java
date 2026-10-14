@@ -39,9 +39,10 @@ class MotorReembolsoTest {
         Map<String, ResultadoDespesa> resultado = processarExemplo();
         ResultadoDespesa d014 = resultado.get("d-014");
 
-        assertEquals(ResultadoDespesa.Status.APROVADA, d014.status(),
-                "categoria 'ALIMENTACAO' deve equivaler a 'alimentacao' e ser reconhecida");
-        assertEquals(new BigDecimal("61.00"), d014.valorReembolsado().saida());
+        assertEquals(ResultadoDespesa.Status.PARCIAL, d014.status(),
+                "categoria 'ALIMENTACAO' deve equivaler a 'alimentacao' e ser reconhecida "
+                        + "(parcial, pois 61,00 excede o teto diario de 60,00 da RN-006)");
+        assertEquals(new BigDecimal("60.00"), d014.valorReembolsado().saida());
         assertTrue(d014.motivos().stream().noneMatch(m -> m.equals(MotorReembolso.MOTIVO_CATEGORIA_FORA_DA_POLITICA)),
                 "nao pode ser recusada por categoria fora da politica");
     }
@@ -67,9 +68,9 @@ class MotorReembolsoTest {
         // RN-001: o catalogo e exatamente alimentacao, transporte_urbano, hospedagem
         Map<String, ResultadoDespesa> resultado = processarExemplo();
 
-        assertEquals(ResultadoDespesa.Status.APROVADA, resultado.get("d-001").status()); // alimentacao
-        assertEquals(ResultadoDespesa.Status.APROVADA, resultado.get("d-003").status()); // transporte_urbano
-        assertEquals(ResultadoDespesa.Status.APROVADA, resultado.get("d-010").status()); // hospedagem
+        assertEquals(ResultadoDespesa.Status.PARCIAL, resultado.get("d-001").status()); // alimentacao (corta na RN-006)
+        assertEquals(ResultadoDespesa.Status.PARCIAL, resultado.get("d-003").status()); // transporte_urbano (corta na RN-006)
+        assertEquals(ResultadoDespesa.Status.APROVADA, resultado.get("d-010").status()); // hospedagem (RN-007 na T-011)
     }
 
     @Test
@@ -107,7 +108,7 @@ class MotorReembolsoTest {
         Map<String, ResultadoDespesa> resultado = processarExemplo();
         ResultadoDespesa d014 = resultado.get("d-014"); // data 2026-07-31
 
-        assertEquals(ResultadoDespesa.Status.APROVADA, d014.status(),
+        org.junit.jupiter.api.Assertions.assertNotEquals(ResultadoDespesa.Status.RECUSADA, d014.status(),
                 "despesa no ultimo dia do periodo deve ser elegivel");
         assertTrue(d014.motivos().stream().noneMatch(m -> m.equals("Despesa fora do período de competência")));
     }
@@ -308,7 +309,8 @@ class MotorReembolsoTest {
         Entrada.DespesaIn b = new Entrada.DespesaIn("x-2", java.time.LocalDate.of(2026, 7, 6),
                 "transporte_urbano", "teste", "TaxiApp", "100.01", false);
         List<ResultadoDespesa> rs = processar(a, b);
-        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(0).status());
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status(),
+                "100,00 sem nota passa na RN-005 e e cortada no teto diario de 80,00 (RN-006)");
         assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(1).status());
         assertTrue(rs.get(1).motivos().contains("Despesa acima de R$ 100,00 sem nota fiscal"),
                 "recusada por nota (RN-005), nao por duplicata: " + rs.get(1).motivos());
@@ -318,8 +320,8 @@ class MotorReembolsoTest {
     @DisplayName("rn004_fornecedorDiferente_naoDuplica")
     void rn004_fornecedorDiferente_naoDuplica() {
         // RN-004: fornecedor faz parte da chave
-        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "alimentacao", "Bistro A", "54.90");
-        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "alimentacao", "Bistro B", "54.90");
+        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "hospedagem", "Bistro A", "54.90");
+        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "hospedagem", "Bistro B", "54.90");
         List<ResultadoDespesa> rs = processar(a, b);
         assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(1).status());
     }
@@ -370,9 +372,11 @@ class MotorReembolsoTest {
                 "a original permanece sendo a primeira da ordem de entrada: " + rs.get(2).motivos());
     }
 
+    // hospedagem: isenta da agregacao diaria da RN-006 (limite e por lancamento, RN-007),
+    // o que isola estes testes do efeito do teto diario — o foco aqui e a chave de duplicata
     private ResultadoDespesa[] processarParDuplicata(String valor1, String valor2) {
-        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "alimentacao", "Bistro", valor1);
-        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "alimentacao", "Bistro", valor2);
+        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "hospedagem", "Bistro", valor1);
+        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "hospedagem", "Bistro", valor2);
         List<ResultadoDespesa> rs = processar(a, b);
         return new ResultadoDespesa[]{rs.get(0), rs.get(1)};
     }
@@ -400,8 +404,10 @@ class MotorReembolsoTest {
         Map<String, ResultadoDespesa> resultado = processarExemplo();
         ResultadoDespesa d003 = resultado.get("d-003");
 
-        assertEquals(ResultadoDespesa.Status.APROVADA, d003.status());
-        assertEquals(new BigDecimal("100.00"), d003.valorReembolsado().saida());
+        // RN-006: a soma elegivel do dia (100,00) e cortada no teto de 80,00 — mas
+        // a despesa NAO foi recusada por falta de nota, que e o ponto da fronteira
+        assertEquals(ResultadoDespesa.Status.PARCIAL, d003.status());
+        assertEquals(new BigDecimal("80.00"), d003.valorReembolsado().saida());
         assertTrue(d003.motivos().stream().noneMatch(m -> m.equals(MotorReembolso.MOTIVO_SEM_NOTA_FISCAL)));
     }
 
@@ -448,7 +454,8 @@ class MotorReembolsoTest {
     @DisplayName("rn005_cemComUmCentavoAbaixo_semNota_elegivel")
     void rn005_cemComUmCentavoAbaixo_semNota_elegivel() {
         // AMB-003: estritamente maior — 99,99 sem nota e elegivel
-        ResultadoDespesa r = processarUnicaSemNota("x-2", "2026-07-10", "alimentacao", "99.99");
+        // (hospedagem: isenta da RN-006 para o teste ficar focado so na fronteira de nota)
+        ResultadoDespesa r = processarUnicaSemNota("x-2", "2026-07-10", "hospedagem", "99.99");
         assertEquals(ResultadoDespesa.Status.APROVADA, r.status());
         assertEquals(new BigDecimal("99.99"), r.valorReembolsado().saida());
     }
@@ -473,6 +480,97 @@ class MotorReembolsoTest {
                         java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
                 List.of(despesa));
         return new MotorReembolso().processar(entrada).get(0);
+    }
+
+    @Test
+    @DisplayName("rn006_duasAlimentacoesMesmoDia_cortaExcedenteEmOrdem")
+    void rn006_duasAlimentacoesMesmoDia_cortaExcedenteEmOrdem() {
+        // RN-006 / AMB-001 / AMB-002: limite diario de alimentacao (60,00) aplica-se
+        // a soma do dia (72,50 + 38,00 = 110,50 > 60). A cota e consumida em ordem
+        // de entrada: a primeira recebe 60,00 (o que resta ate o teto); a segunda 0,00.
+        Entrada.DespesaIn primeira = despesa("x-1", "2026-07-10", "alimentacao", "Rest A", "72.50");
+        Entrada.DespesaIn segunda = despesa("x-2", "2026-07-10", "alimentacao", "Rest B", "38.00");
+        List<ResultadoDespesa> rs = processar(primeira, segunda);
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status());
+        assertEquals(new BigDecimal("60.00"), rs.get(0).valorReembolsado().saida(),
+                "primeira despesa recebe o limite diario restante");
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(1).status());
+        assertEquals(new BigDecimal("0.00"), rs.get(1).valorReembolsado().saida(),
+                "segunda despesa do dia recebe zero — cota esgotada pela primeira");
+    }
+
+    @Test
+    @DisplayName("rn006_limiteDiarioTransporte_80porDia")
+    void rn006_limiteDiarioTransporte_80porDia() {
+        // RN-006: transporte_urbano tem teto diario proprio de R$ 80,00
+        Entrada.DespesaIn corrida = despesa("x-1", "2026-07-10", "transporte_urbano", "TaxiApp", "100.00");
+        List<ResultadoDespesa> rs = processar(corrida);
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status());
+        assertEquals(new BigDecimal("80.00"), rs.get(0).valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn006_diasDiferentes_naoSomam")
+    void rn006_diasDiferentes_naoSomam() {
+        // RN-006: a agregacao e por dia — 50 de alimentacao em dias distintos
+        // nao dividem a mesma cota
+        Entrada.DespesaIn dia1 = despesa("x-1", "2026-07-10", "alimentacao", "Rest", "50.00");
+        Entrada.DespesaIn dia2 = despesa("x-2", "2026-07-11", "alimentacao", "Rest", "50.00");
+        List<ResultadoDespesa> rs = processar(dia1, dia2);
+
+        assertEquals(new BigDecimal("50.00"), rs.get(0).valorReembolsado().saida());
+        assertEquals(new BigDecimal("50.00"), rs.get(1).valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn006_recusadaNaoGastaCota")
+    void rn006_recusadaNaoGastaCota() {
+        // RN-006 / AMB-012: despesa recusada (d-004, 100,01 sem nota) NAO entra na
+        // soma elegivel do dia — a cota de transporte do d-003 depende so dele:
+        // 100,00 elegiveis cortados no teto diario de 80,00.
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d003 = resultado.get("d-003");
+        ResultadoDespesa d004 = resultado.get("d-004");
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, d004.status());
+        assertEquals(ResultadoDespesa.Status.PARCIAL, d003.status());
+        assertEquals(new BigDecimal("80.00"), d003.valorReembolsado().saida(),
+                "unica despesa elegivel do dia: 100,00 cortada no teto de 80,00");
+        assertTrue(d003.motivos().contains(MotorReembolso.MOTIVO_CORTE_LIMITE_DIARIO),
+                "o corte e por limite, nao por estorno: " + d003.motivos());
+    }
+
+    @Test
+    @DisplayName("rn006_statusParcialQuandoCortado")
+    void rn006_statusParcialQuandoCortado() {
+        // RN-006 / AMB-002: toda despesa cortada pelo limite sai com status parcial.
+        // No exemplo: d-001 (72,50) cortado em 60,00 e d-002 (38,00) cortado em 0,00,
+        // ambos no dia 2026-07-03 (soma 110,50 > 60).
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d001 = resultado.get("d-001");
+        ResultadoDespesa d002 = resultado.get("d-002");
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, d001.status());
+        assertEquals(new BigDecimal("60.00"), d001.valorReembolsado().saida());
+        assertEquals(ResultadoDespesa.Status.PARCIAL, d002.status());
+        assertEquals(new BigDecimal("0.00"), d002.valorReembolsado().saida());
+        assertTrue(d001.motivos().contains(MotorReembolso.MOTIVO_CORTE_LIMITE_DIARIO));
+        assertTrue(d002.motivos().contains(MotorReembolso.MOTIVO_CORTE_LIMITE_DIARIO));
+    }
+
+    @Test
+    @DisplayName("rn006_estornoAbatAntesDoLimite")
+    void rn006_estornoAbatAntesDoLimite() {
+        // RN-009 + RN-006 (ordem §8): o estorno abate a soma elegivel antes do
+        // teto — 90 - 40 = 50 fica abaixo de 60 e nao ha corte adicional
+        Entrada.DespesaIn despesa = despesa("x-1", "2026-07-10", "alimentacao", "Rest A", "90.00");
+        Entrada.DespesaIn estorno = despesa("x-2", "2026-07-10", "alimentacao", "Rest B", "-40.00");
+        List<ResultadoDespesa> rs = processar(despesa, estorno);
+
+        assertEquals(new BigDecimal("50.00"), rs.get(0).valorReembolsado().saida());
     }
 
     @Test

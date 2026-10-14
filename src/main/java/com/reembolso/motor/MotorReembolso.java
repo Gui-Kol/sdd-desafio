@@ -13,7 +13,7 @@ import com.reembolso.io.Entrada;
 
 /**
  * Motor de calculo de reembolso: percorre cada despesa pelo pipeline fixo
- * da spec §8. Nesta fase (T-007) estao implementados os passos:
+ * da spec §8. Nesta fase (T-010) estao implementados os passos:
  *
  * <ol>
  *   <li>RN-001 — normalizacao de categoria (case-insensitive + trim) contra o
@@ -37,13 +37,18 @@ import com.reembolso.io.Entrada;
  *       nota fiscal; sem nota, a despesa e recusada integralmente. Exatamente
  *       R$ 100,00 nao exige nota (AMB-003); a exigencia e por despesa
  *       individual, nunca pelo total do dia (AMB-004).</li>
+ *   <li>RN-006 — os limites diarios de alimentacao (R$ 60,00) e transporte
+ *       urbano (R$ 80,00) aplicam-se a soma elegivel do dia/categoria (apos
+ *       RN-002..RN-005 e RN-009), com corte do excedente em ordem de entrada
+ *       (AMB-001, AMB-002, AMB-012). O teto e resolvido via {@link Politica},
+ *       unico ponto do fator de viagem (RN-008).</li>
  * </ol>
  *
  * <p>O processamento e feito em duas fases: primeiro as recusas por item
  * (passos 1-4), depois a distribuicao da soma elegivel de cada dia/categoria
- * aos itens positivos em ordem de entrada — o abatimento do estorno e um efeito
- * de dia inteiro, nao de posicao na lista. Os limites de categoria (RN-006,
- * RN-007) entram nas proximas tasks sobre esta mesma distribuicao.
+ * (limitada ao teto diario da RN-006) aos itens positivos em ordem de entrada —
+ * o abatimento do estorno e um efeito de dia inteiro, nao de posicao na lista.
+ * O limite por lancamento de hospedagem (RN-007) entra na proxima task.
  */
 public final class MotorReembolso {
 
@@ -52,6 +57,7 @@ public final class MotorReembolso {
     public static final String MOTIVO_ESTORNO = "Estorno: abatido do total da categoria no dia";
     public static final String MOTIVO_REDUZIDA_POR_ESTORNO = "Reduzida por estorno: abatida da soma da categoria no dia";
     public static final String MOTIVO_SEM_NOTA_FISCAL = "Despesa acima de R$ 100,00 sem nota fiscal";
+    public static final String MOTIVO_CORTE_LIMITE_DIARIO = "Excedente cortado ao limite diário da categoria";
 
     /** Tolerancia da RN-004: valores a ate R$ 0,01 de distancia sao "o mesmo valor". */
     private static final Dinheiro TOLERANCIA_DUPLICATA = Dinheiro.de("0.01");
@@ -124,8 +130,9 @@ public final class MotorReembolso {
             indice++;
         }
 
-        // Fase 2 — RN-009: distribui a soma elegivel do dia (positivos + estornos),
-        // consumindo em ordem de entrada; soma <= 0 nao reembolsa nada (sem credito)
+        // Fase 2 — RN-009 + RN-006: distribui a soma elegivel do dia (positivos
+        // + estornos) limitada ao teto diario da categoria, consumindo em ordem
+        // de entrada (AMB-001/AMB-002); soma <= 0 nao reembolsa nada (sem credito)
         Map<DiaCategoria, Dinheiro> positivosPorDia = new HashMap<>();
         for (Pendente p : pendentes) {
             DiaCategoria chave = new DiaCategoria(p.despesa().data(), p.categoria());
@@ -133,16 +140,25 @@ public final class MotorReembolso {
         }
 
         Map<DiaCategoria, Dinheiro> cotaDisponivel = new HashMap<>();
+        Map<DiaCategoria, String> motivoCortePorDia = new HashMap<>();
         for (Pendente p : pendentes) {
             DiaCategoria chave = new DiaCategoria(p.despesa().data(), p.categoria());
             Dinheiro cota = cotaDisponivel.computeIfAbsent(chave, k -> {
                 Dinheiro soma = positivosPorDia.get(k)
                         .adicionar(estornosPorDia.getOrDefault(k, Dinheiro.ZERO));
-                return soma.negativo() ? Dinheiro.ZERO : soma;
+                Dinheiro somaElegivel = soma.negativo() ? Dinheiro.ZERO : soma;
+                Dinheiro tetoDiario = tetoDiario(k.categoria(), periodo.emViagem());
+                if (tetoDiario != null && somaElegivel.maiorQue(tetoDiario)) {
+                    // RN-006: o excedente do dia e cortado no limite da categoria
+                    motivoCortePorDia.put(k, MOTIVO_CORTE_LIMITE_DIARIO);
+                    return tetoDiario;
+                }
+                return somaElegivel;
             });
             Dinheiro reembolso = p.valor().menorOuIgualA(cota) ? p.valor() : cota;
             cotaDisponivel.put(chave, cota.subtrair(reembolso));
-            resultados[p.indice()] = aprovada(p.despesa().id(), p.valor(), reembolso);
+            resultados[p.indice()] = aprovada(p.despesa().id(), p.valor(), reembolso,
+                    motivoCortePorDia.getOrDefault(chave, MOTIVO_REDUZIDA_POR_ESTORNO));
         }
 
         return List.of(resultados);
@@ -153,14 +169,26 @@ public final class MotorReembolso {
                 valor, Dinheiro.ZERO, List.of(motivo));
     }
 
+    /**
+     * RN-006: teto diario da categoria, resolvido via Politica (RN-008 aplica o
+     * fator de viagem aqui). Hospedagem NAO tem agregacao diaria — seu limite e
+     * por lancamento (RN-007, task T-011) — entao devolve null por ora.
+     */
+    private Dinheiro tetoDiario(Categoria categoria, boolean emViagem) {
+        return switch (categoria) {
+            case ALIMENTACAO, TRANSPORTE_URBANO -> Politica.limite(categoria, emViagem);
+            case HOSPEDAGEM -> null;
+        };
+    }
+
     // RN-011: toda decisao carrega motivo — aprovacao integral ou corte
-    private ResultadoDespesa aprovada(String id, Dinheiro valor, Dinheiro reembolso) {
+    private ResultadoDespesa aprovada(String id, Dinheiro valor, Dinheiro reembolso, String motivoCorte) {
         if (reembolso.equals(valor)) {
             return new ResultadoDespesa(id, ResultadoDespesa.Status.APROVADA,
                     valor, valor, List.of("Aprovada integralmente"));
         }
         return new ResultadoDespesa(id, ResultadoDespesa.Status.PARCIAL,
-                valor, reembolso, List.of(MOTIVO_REDUZIDA_POR_ESTORNO));
+                valor, reembolso, List.of(motivoCorte));
     }
 
     /** Item que ja sobreviveu aos passos 1-2 e pode ser original de uma duplicata. */

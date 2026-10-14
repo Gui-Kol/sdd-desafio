@@ -61,7 +61,7 @@
   - **Aceite:** testes `PoliticaTest.limite_emViagem_amplia50porCento()` (60→90, 80→120, 250→375) e `PoliticaTest.gatilhoNota_emViagem_naoAmplia()`.
   - **Commit:**
 
-- [ ] **T-010** — RN-006: agregação diária alimentação/transporte, corte em ordem de entrada
+- [x] **T-010** — RN-006: agregação diária alimentação/transporte, corte em ordem de entrada
   - **Atende:** RN-006, AMB-001, AMB-002, AMB-012, DT-003
   - **Aceite:** testes `rn006_duasAlimentacoesMesmoDia_cortaExcedenteEmOrdem()` (72,50 + 38,00 → primeira 60,00; segunda 0,00), `rn006_recusadaNaoGastaCota()` (d-004 recusada não reduz cota do d-003), `rn006_statusParcialQuandoCortado()`.
   - **Commit:**
