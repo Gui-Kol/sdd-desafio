@@ -93,7 +93,7 @@
   - **Aceite:** teste ponta a ponta `CliE2ETest`: roda binário/wrapper com `--input exemplos/despesas-exemplo.json --output out.json`; arquivo criado; código de saída 0; uso errado → código 2 com ajuda.
   - **Commit:**
 
-- [ ] **T-016** — E2E dourado: totais esperados do exemplo
+- [x] **T-016** — E2E dourado: totais esperados do exemplo
   - **Atende:** spec §9 critérios de aceite
   - **Aceite:** `ExemploE2ETest` processa o arquivo exemplo e afirma o estado de cada despesa — d-001 parcial 60,00; d-002 parcial 0,00; d-003 parcial 80,00; d-004 recusada; d-005 recusada; d-006 aprovada 54,90; d-007 recusada duplicata; d-008 recusada período; d-009 recusada estorno; d-010 parcial 250,00; d-011 aprovada 33,33; d-012 aprovada 47,20; d-013 recusada nota; d-014 parcial 60,00 — e `total_reembolsado = 585,43`.
   - **Commit:**
