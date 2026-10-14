@@ -4,8 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="docs(T-017): adiciona README com instrucoes de uso e convencoes do projeto">
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="docs: adiciona log exportado da sessao 04 (fase 4 - saida e cli)">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/RELATORIO.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/RELATORIO.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -118,7 +120,8 @@
     <MESSAGE value="feat(T-015): implementa interface CLI calcular com argumentos input e output" />
     <MESSAGE value="test(T-016): adiciona teste end-to-end do exemplo com totais validados" />
     <MESSAGE value="docs(T-017): adiciona README com instrucoes de uso e convencoes do projeto" />
-    <option name="LAST_COMMIT_MESSAGE" value="docs(T-017): adiciona README com instrucoes de uso e convencoes do projeto" />
+    <MESSAGE value="docs: adiciona log exportado da sessao 04 (fase 4 - saida e cli)" />
+    <option name="LAST_COMMIT_MESSAGE" value="docs: adiciona log exportado da sessao 04 (fase 4 - saida e cli)" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
