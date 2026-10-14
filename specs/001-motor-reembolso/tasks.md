@@ -49,7 +49,7 @@
   - **Aceite:** testes `rn009_estornoSozinho_diaZeradoSemCredito()` (d-009 recusada como estorno; categoria/dia = 0) e `rn009_estornoAbateSomaDoDia()` (90 − 40 = 50 elegível).
   - **Commit:**
 
-- [ ] **T-008** — RN-005: exigência de nota fiscal (fronteira estrita)
+- [x] **T-008** — RN-005: exigência de nota fiscal (fronteira estrita)
   - **Atende:** RN-005, AMB-003, AMB-004
   - **Aceite:** testes `rn005_fronteiraCemReaisSemNota_naoExige()` (d-003 passa), `rn005_cemVirgulaUmSemNota_recusa()` (d-004 recusada), `rn005_hospedagem690SemNota_recusaPorNota()` (d-013 morre por nota, não por teto — ordem §8).
   - **Commit:**

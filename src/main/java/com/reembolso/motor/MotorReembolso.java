@@ -32,7 +32,11 @@ import com.reembolso.io.Entrada;
  *       "Estorno: abatido do total da categoria no dia" e o seu valor reduz a
  *       soma elegivel do dia/categoria; soma diaria negativa ou zero nao gera
  *       reembolso algum nem credito ao colaborador (AMB-008). Estorno nao exige
- *       nota fiscal nem e afetado por limites.</li>
+ *       nota fiscal nem e afetado por limites;</li>
+ *   <li>RN-005 — valor individual **estritamente maior** que R$ 100,00 exige
+ *       nota fiscal; sem nota, a despesa e recusada integralmente. Exatamente
+ *       R$ 100,00 nao exige nota (AMB-003); a exigencia e por despesa
+ *       individual, nunca pelo total do dia (AMB-004).</li>
  * </ol>
  *
  * <p>O processamento e feito em duas fases: primeiro as recusas por item
@@ -47,6 +51,10 @@ public final class MotorReembolso {
     public static final String MOTIVO_FORA_DO_PERIODO = "Despesa fora do período de competência";
     public static final String MOTIVO_ESTORNO = "Estorno: abatido do total da categoria no dia";
     public static final String MOTIVO_REDUZIDA_POR_ESTORNO = "Reduzida por estorno: abatida da soma da categoria no dia";
+    public static final String MOTIVO_SEM_NOTA_FISCAL = "Despesa acima de R$ 100,00 sem nota fiscal";
+
+    /** RN-005: gatilho de nota fiscal — estritamente maior que R$ 100,00 (AMB-003). */
+    private static final Dinheiro GATILHO_NOTA_FISCAL = Dinheiro.de("100.00");
 
     /** Tolerancia da RN-004: valores a ate R$ 0,01 de distancia sao "o mesmo valor". */
     private static final Dinheiro TOLERANCIA_DUPLICATA = Dinheiro.de("0.01");
@@ -102,6 +110,13 @@ public final class MotorReembolso {
                 DiaCategoria chave = new DiaCategoria(despesa.data(), categoria.get());
                 estornosPorDia.merge(chave, valor, Dinheiro::adicionar);
                 resultados[indice] = recusada(despesa.id(), valor, MOTIVO_ESTORNO);
+                indice++;
+                continue;
+            }
+
+            // RN-005: valor individual > R$ 100,00 exige nota fiscal; sem nota -> recusa integral
+            if (valor.maiorQue(GATILHO_NOTA_FISCAL) && !despesa.temNotaFiscal()) {
+                resultados[indice] = recusada(despesa.id(), valor, MOTIVO_SEM_NOTA_FISCAL);
                 indice++;
                 continue;
             }
@@ -172,12 +187,14 @@ public final class MotorReembolso {
                 && a.fornecedor().equals(b.fornecedor());
     }
 
-    /** RN-004: tolerancia de R$ 0,01 sobre os valores ja arredondados (RN-010). */
+    /** RN-004: tolerancia de R$ 0,01 — diferencas visiveis (>= 1 centavo apos o
+     *  arredondamento da RN-010) NAO sao a mesma despesa: d-003 (100,00) e
+     *  d-004 (100,01) nao duplicam e d-004 morre por nota (§7). */
     private boolean dentroDaTolerancia(Dinheiro a, Dinheiro b) {
         Dinheiro diferenca = a.subtrair(b);
         if (diferenca.negativo()) {
             diferenca = Dinheiro.ZERO.subtrair(diferenca);
         }
-        return diferenca.menorOuIgualA(TOLERANCIA_DUPLICATA);
+        return diferenca.compareTo(TOLERANCIA_DUPLICATA) < 0;
     }
 }

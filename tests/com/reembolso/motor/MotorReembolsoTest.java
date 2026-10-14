@@ -299,12 +299,19 @@ class MotorReembolsoTest {
     }
 
     @Test
-    @DisplayName("rn004_toleranciaDeUmCentavo_duplica")
-    void rn004_toleranciaDeUmCentavo_duplica() {
-        // RN-004: exatamente R$ 0,01 de diferenca ainda e "o mesmo valor"
-        ResultadoDespesa[] rs = processarParDuplicata("54.90", "54.91");
-        assertEquals(ResultadoDespesa.Status.APROVADA, rs[0].status());
-        assertEquals(ResultadoDespesa.Status.RECUSADA, rs[1].status());
+    @DisplayName("rn004_diferencaDeUmCentavo_naoDuplica")
+    void rn004_diferencaDeUmCentavo_naoDuplica() {
+        // RN-004 + §7 (linha d-004): diferenca visivel de 1 centavo NAO e "o mesmo
+        // valor" — 100,00 e 100,01 sao despesas distintas (d-004 morre por nota).
+        Entrada.DespesaIn a = new Entrada.DespesaIn("x-1", java.time.LocalDate.of(2026, 7, 6),
+                "transporte_urbano", "teste", "TaxiApp", "100.00", false);
+        Entrada.DespesaIn b = new Entrada.DespesaIn("x-2", java.time.LocalDate.of(2026, 7, 6),
+                "transporte_urbano", "teste", "TaxiApp", "100.01", false);
+        List<ResultadoDespesa> rs = processar(a, b);
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(0).status());
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(1).status());
+        assertTrue(rs.get(1).motivos().contains("Despesa acima de R$ 100,00 sem nota fiscal"),
+                "recusada por nota (RN-005), nao por duplicata: " + rs.get(1).motivos());
     }
 
     @Test
@@ -383,6 +390,89 @@ class MotorReembolsoTest {
                         java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
                 List.of(despesas));
         return new MotorReembolso().processar(entrada);
+    }
+
+    @Test
+    @DisplayName("rn005_fronteiraCemReaisSemNota_naoExige")
+    void rn005_fronteiraCemReaisSemNota_naoExige() {
+        // RN-005 / AMB-003: fronteira estrita — exatamente R$ 100,00 sem nota NAO exige.
+        // d-003 (100,00, tem_nota_fiscal=false) permanece elegivel.
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d003 = resultado.get("d-003");
+
+        assertEquals(ResultadoDespesa.Status.APROVADA, d003.status());
+        assertEquals(new BigDecimal("100.00"), d003.valorReembolsado().saida());
+        assertTrue(d003.motivos().stream().noneMatch(m -> m.equals(MotorReembolso.MOTIVO_SEM_NOTA_FISCAL)));
+    }
+
+    @Test
+    @DisplayName("rn005_cemVirgulaUmSemNota_recusa")
+    void rn005_cemVirgulaUmSemNota_recusa() {
+        // RN-005 / AMB-004: R$ 100,01 sem nota -> recusa integral, mesmo com outra
+        // corrida no mesmo dia (a exigencia e por despesa, nao por total do dia).
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d004 = resultado.get("d-004");
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, d004.status());
+        assertEquals(new BigDecimal("0.00"), d004.valorReembolsado().saida());
+        assertEquals(new BigDecimal("100.01"), d004.valorSolicitado().saida());
+        assertTrue(d004.motivos().contains("Despesa acima de R$ 100,00 sem nota fiscal"),
+                "motivo obrigatorio da RN-005: " + d004.motivos());
+    }
+
+    @Test
+    @DisplayName("rn005_hospedagem690SemNota_recusaPorNota")
+    void rn005_hospedagem690SemNota_recusaPorNota() {
+        // RN-005 + ordem §8: d-013 (hospedagem 690,00 sem nota) morre POR NOTA no
+        // passo 5, antes de qualquer limite (passo 7) — motivo de nota, nao de teto.
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d013 = resultado.get("d-013");
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, d013.status());
+        assertEquals(new BigDecimal("0.00"), d013.valorReembolsado().saida());
+        assertEquals(List.of("Despesa acima de R$ 100,00 sem nota fiscal"), d013.motivos(),
+                "a ordem do §8 garante motivo de nota, nunca de limite: " + d013.motivos());
+    }
+
+    @Test
+    @DisplayName("rn005_acimaDeCemComNota_elegivel")
+    void rn005_acimaDeCemComNota_elegivel() {
+        // RN-005: nota presente desarma a exigencia, qualquer que seja o valor
+        Entrada.DespesaIn comNota = new Entrada.DespesaIn("x-1",
+                java.time.LocalDate.of(2026, 7, 10), "hospedagem", "teste", "Hotel", "500.00", true);
+        List<ResultadoDespesa> rs = processar(comNota);
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(0).status());
+    }
+
+    @Test
+    @DisplayName("rn005_cemComUmCentavoAbaixo_semNota_elegivel")
+    void rn005_cemComUmCentavoAbaixo_semNota_elegivel() {
+        // AMB-003: estritamente maior — 99,99 sem nota e elegivel
+        ResultadoDespesa r = processarUnicaSemNota("x-2", "2026-07-10", "alimentacao", "99.99");
+        assertEquals(ResultadoDespesa.Status.APROVADA, r.status());
+        assertEquals(new BigDecimal("99.99"), r.valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn005_EstornoNegativoSemNota_naoExigeNota")
+    void rn005_EstornoNegativoSemNota_naoExigeNota() {
+        // RN-009 + RN-005 (ordem §8): estorno nao exige nota fiscal — o passo 4
+        // recusa por estorno antes do passo 5 testar o gatilho de nota.
+        ResultadoDespesa r = processarUnicaSemNota("x-3", "2026-07-10", "transporte_urbano", "-150.00");
+        assertEquals(ResultadoDespesa.Status.RECUSADA, r.status());
+        assertEquals(List.of("Estorno: abatido do total da categoria no dia"), r.motivos(),
+                "estorno morre por estorno, nunca por falta de nota");
+    }
+
+    private ResultadoDespesa processarUnicaSemNota(String id, String data, String categoria, String valor) {
+        Entrada.DespesaIn despesa = new Entrada.DespesaIn(id,
+                java.time.LocalDate.parse(data), categoria, "teste", "Fornecedor", valor, false);
+        Entrada entrada = new Entrada(
+                new Entrada.Colaborador("c-1", "X", "CC"),
+                new Entrada.Periodo("2026-07",
+                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
+                List.of(despesa));
+        return new MotorReembolso().processar(entrada).get(0);
     }
 
     @Test
