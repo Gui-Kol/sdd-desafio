@@ -1,101 +1,86 @@
-# Desafio Prático — Spec Driven Development
+# Motor de Cálculo de Reembolso
 
-Aula bônus de SDD, fechando a trilha:
+CLI em Java 17 que lê um JSON de despesas corporativas e calcula o valor
+reembolsável de cada item, com justificativa legível por despesa e totais do
+período — conforme a política do RH especificada em
+[`specs/001-motor-reembolso/spec.md`](specs/001-motor-reembolso/spec.md).
 
-`AI Fluency` → `Claude 101` → `Claude Code 101` → `Building with the Claude API` → `Claude Code in Action` → `Módulo SDD` → **Desafio**
+## Pré-requisitos
 
-**Individual · 2 dias · Claude Code**
+- **JDK 17** (`java -version` deve mostrar 17 ou superior)
+- **Maven 3.8+** (`mvn -version`)
 
----
+Nenhuma outra instalação é necessária: as dependências (JUnit 5, Jackson) são
+baixadas pelo Maven na primeira execução.
 
-## Comece por aqui
-
-1. **[`DESAFIO.md`](DESAFIO.md)** — o enunciado. Leia inteiro antes de escrever qualquer coisa.
-2. **[`RUBRICA.md`](RUBRICA.md)** — como você é avaliado. É pública de propósito; leia antes de começar.
-3. **[`exemplos/despesas-exemplo.json`](exemplos/despesas-exemplo.json)** — a entrada de referência. Não é decoração: percorra item por item antes de escrever a spec.
-4. **[`FAQ.md`](FAQ.md)** — travou? Comece por aqui. **O instrutor está fora durante o desafio**, então o FAQ é o canal de suporte.
-
----
-
-## Como participar
-
-**1. Faça um fork deste repositório.** Ele precisa ser público, ou você não conseguirá compartilhar depois.
-
-**2. Clone o seu fork e prepare a estrutura de trabalho:**
+## Como testar
 
 ```bash
-git clone https://github.com/<seu-usuario>/sdd-desafio.git
-cd sdd-desafio
-cp template/OPENCODE.md .
-cp -r template/specs .
-cp -r template/docs .
-git add -A && git commit -m "chore: estrutura inicial a partir do template"
+mvn test
 ```
 
-<details>
-<summary>PowerShell</summary>
+Isso compila o projeto e roda toda a suíte (testes unitários do motor e dos
+tipos de domínio, testes de integração do JSON de saída e testes ponta a ponta
+da CLI, incluindo o E2E dourado com os totais do exemplo). Ao final você deve
+ver **BUILD SUCCESS** com todos os testes verdes.
 
-```powershell
-git clone https://github.com/<seu-usuario>/sdd-desafio.git
-cd sdd-desafio
-Copy-Item template\CLAUDE.md .
-Copy-Item template\specs . -Recurse
-Copy-Item template\docs . -Recurse
-git add -A; git commit -m "chore: estrutura inicial a partir do template"
-```
-</details>
+## Como rodar
 
-Os arquivos em `template/` são esqueletos com as perguntas que cada documento precisa responder. Deixe a pasta `template/` onde está — ela serve de referência.
+O comando fixo do projeto é o wrapper `reembolso`:
 
-**3. Trabalhe no seu fork**, seguindo as três regras do jogo descritas no [`DESAFIO.md`](DESAFIO.md):
+```bash
+# Windows
+reembolso.cmd calcular --input exemplos/despesas-exemplo.json --output saida.json
 
-- Nenhum commit sem task
-- Explicação no chat que não está na spec é bug de spec
-- Interações exportadas (`/export`) e commitadas em `docs/sessions/`
-
-**4. No Dia 2, às 10h**, você recebe uma mudança de requisito pelo canal da turma. Ela é obrigatória e vale 20 pontos. Chegue nesse momento com o sistema base funcionando e testado.
-
-> Durante os dois dias o instrutor está de férias e não responde mensagens. Dúvida de processo: [`FAQ.md`](FAQ.md). Dúvida sobre o que a política do RH significa não tem resposta — decidir isso é o exercício.
-
-**5. Entregue** enviando o link do seu fork no formulário. Prazo: **Dia 2, 18h**.
-
----
-
-## O que o seu fork precisa conter ao final
-
-```
-seu-fork/
-├── CLAUDE.md                     # convenções do projeto para o agente
-├── README.md                     # como rodar e como testar o SEU projeto
-├── specs/
-│   └── 001-motor-reembolso/
-│       ├── spec.md               # o QUÊ e o PORQUÊ
-│       ├── plan.md               # o COMO
-│       ├── tasks.md              # T-001..T-0NN, com critério de aceite
-│       └── DECISIONS.md          # log de mudanças de spec
-├── src/
-├── tests/
-└── docs/
-    ├── sessions/                 # exports das suas conversas com o Claude
-    └── RELATORIO.md              # o relatório final
+# Linux / macOS
+sh reembolso.sh calcular --input exemplos/despesas-exemplo.json --output saida.json
 ```
 
-Sobre o `README.md`: substitua este arquivo pelo README do **seu** projeto — como rodar, como testar, o que você construiu. Um README que não permite rodar o projeto custa pontos.
+Na primeira execução o wrapper compila o projeto e cacheia o classpath; depois
+roda o Java direto. O resultado é escrito em `saida.json` no formato da spec §4
+(`colaborador_id`, `competencia`, `total_solicitado`, `total_reembolsado` e
+`despesas[]` com `id`, `status`, `valor_solicitado`, `valor_reembolsado`,
+`motivos`).
 
----
+Alternativa via Maven (sem wrapper):
 
-## Antes de começar, confirme que o `/export` funciona
+```bash
+mvn -q exec:java -Dexec.args="calcular --input exemplos/despesas-exemplo.json --output saida.json"
+```
 
-Abra o Claude Code, troque duas mensagens, rode `/export` e confirme que o arquivo foi gerado.
+### Códigos de saída
 
-Faça isso **agora**, não no Dia 2. Sem `docs/sessions/`, o critério de relatório vale zero — e já aconteceu de gente que fez tudo certo descobrir no último dia que não tinha registro nenhum do trabalho.
+| Código | Significado |
+|---|---|
+| 0 | Sucesso — arquivo de saída escrito |
+| 1 | Erro de processamento (arquivo ilegível, JSON malformado) — mensagem no stderr |
+| 2 | Erro de uso — imprime a ajuda no stderr |
 
-Exporte ao final de **cada** sessão, nomeando `docs/sessions/01-descricao-curta.md`, `02-...`, e assim por diante.
+## Formato de entrada
 
----
+Espelha [`exemplos/despesas-exemplo.json`](exemplos/despesas-exemplo.json):
+`colaborador`, `periodo` (com `competencia`, `inicio`, `fim` e `em_viagem`
+opcional — ausente = `false`) e a lista `despesas[]` com `id`, `data`,
+`categoria`, `descricao`, `fornecedor`, `valor` e `tem_nota_fiscal`.
 
-## O resumo em um parágrafo
+## Estrutura do código
 
-Você vai receber uma política de reembolso escrita por um RH, com a redação ruim que uma política de RH real tem. Ela é ambígua em vários pontos, e você não tem acesso a ninguém para tirar dúvida. O trabalho não é implementar — é **especificar**: encontrar cada ambiguidade, decidir explicitamente, justificar e registrar. O produto funcionando vale **10 dos 100 pontos**. Os outros 90 estão na spec, na rastreabilidade `spec → tasks → commits → testes`, na resposta à mudança de requisito do Dia 2 e no relatório.
+```
+src/main/java/com/reembolso/
+├── dominio/        # Dinheiro (BigDecimal scale 2, HALF_UP), Categoria
+├── io/             # Ingestao (JSON -> Entrada), EscritorSaida (Saida -> JSON)
+├── motor/          # MotorReembolso (pipeline da spec §8), Politica (RN-008)
+├── materializacao/ # Saida: modelo de saída e consolidação dos totais
+└── cli/            # Main: calcular --input X --output Y (parser à mão, DT-005)
+tests/              # suíte JUnit 5 espelhando os pacotes de src
+```
 
-Isso é deliberado. Um projeto que roda perfeitamente com spec fraca tira nota baixa; um projeto com bug conhecido, spec impecável e trilha limpa tira nota alta.
+## Regras de negócio
+
+Todas as regras (RN-001 a RN-011) e ambiguidades resolvidas (AMB-001 a AMB-013)
+estão especificadas com critério de aceite em `specs/001-motor-reembolso/`:
+
+- [`spec.md`](specs/001-motor-reembolso/spec.md) — o quê e o porquê
+- [`plan.md`](specs/001-motor-reembolso/plan.md) — o como (decisões técnicas DT-001..)
+- [`tasks.md`](specs/001-motor-reembolso/tasks.md) — ordem de implementação e rastreabilidade
+- [`DECISIONS.md`](specs/001-motor-reembolso/DECISIONS.md) — log de mudanças de spec
