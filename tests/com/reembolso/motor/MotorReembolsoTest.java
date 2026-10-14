@@ -160,6 +160,104 @@ class MotorReembolsoTest {
     }
 
     @Test
+    @DisplayName("rn009_estornoSozinho_diaZeradoSemCredito")
+    void rn009_estornoSozinho_diaZeradoSemCredito() {
+        // RN-009 / AMB-008: d-009 (-45,00 transporte_urbano em 2026-07-11) e a unica
+        // despesa da categoria no dia: soma diaria negativa -> nada e reembolsado
+        // naquele dia/categoria, sem gerar credito ao colaborador.
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d009 = resultado.get("d-009");
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, d009.status(),
+                "o item estorno em si nunca e reembolsavel por si so");
+        assertEquals(new BigDecimal("0.00"), d009.valorReembolsado().saida());
+        assertEquals(new BigDecimal("-45.00"), d009.valorSolicitado().saida());
+        assertTrue(d009.motivos().contains("Estorno: abatido do total da categoria no dia"),
+                "motivo obrigatorio do estorno (AMB-008): " + d009.motivos());
+    }
+
+    @Test
+    @DisplayName("rn009_estornoAbateSomaDoDia")
+    void rn009_estornoAbateSomaDoDia() {
+        // RN-009: estorno de -40 abate a soma elegivel do dia: 90 - 40 = 50 reembolsado
+        Entrada.DespesaIn despesa = despesa("x-1", "2026-07-10", "alimentacao", "Rest", "90.00");
+        Entrada.DespesaIn estorno = despesa("x-2", "2026-07-10", "alimentacao", "Rest", "-40.00");
+        List<ResultadoDespesa> rs = processar(despesa, estorno);
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status());
+        assertEquals(new BigDecimal("50.00"), rs.get(0).valorReembolsado().saida(),
+                "soma elegivel do dia = 90 - 40 = 50");
+        assertFalseVazio(rs.get(0));
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(1).status());
+        assertEquals(new BigDecimal("0.00"), rs.get(1).valorReembolsado().saida());
+        assertTrue(rs.get(1).motivos().contains("Estorno: abatido do total da categoria no dia"));
+    }
+
+    @Test
+    @DisplayName("rn009_estornoMaiorQueSoma_naoGeraCredito")
+    void rn009_estornoMaiorQueSoma_naoGeraCredito() {
+        // RN-009: soma diaria negativa nunca vira devolucao — o colaborador nao paga de volta
+        Entrada.DespesaIn despesa = despesa("x-1", "2026-07-10", "transporte_urbano", "TaxiApp", "30.00");
+        Entrada.DespesaIn estorno = despesa("x-2", "2026-07-10", "transporte_urbano", "TaxiExt", "-80.00");
+        List<ResultadoDespesa> rs = processar(despesa, estorno);
+
+        assertEquals(new BigDecimal("0.00"), rs.get(0).valorReembolsado().saida(),
+                "reembolso zero, nunca negativo");
+        assertEquals(new BigDecimal("0.00"), rs.get(1).valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn009_estornoNaoAtravessaDiaNemCategoria")
+    void rn009_estornoNaoAtravessaDiaNemCategoria() {
+        // RN-009: o abatimento e restrito ao (dia, categoria) do estorno
+        Entrada.DespesaIn estorno = despesa("x-1", "2026-07-10", "alimentacao", "Rest", "-40.00");
+        Entrada.DespesaIn outraCategoria = despesa("x-2", "2026-07-10", "transporte_urbano", "TaxiApp", "50.00");
+        Entrada.DespesaIn outroDia = despesa("x-3", "2026-07-11", "alimentacao", "Rest", "50.00");
+        List<ResultadoDespesa> rs = processar(estorno, outraCategoria, outroDia);
+
+        assertEquals(new BigDecimal("50.00"), rs.get(1).valorReembolsado().saida(),
+                "categoria diferente no mesmo dia nao e abatida");
+        assertEquals(new BigDecimal("50.00"), rs.get(2).valorReembolsado().saida(),
+                "mesma categoria em outro dia nao e abatida");
+    }
+
+    @Test
+    @DisplayName("rn009_estornoConsomeEmOrdemDeEntrada")
+    void rn009_estornoConsomeEmOrdemDeEntrada() {
+        // RN-009 + AMB-012: a soma elegivel do dia e consumida em ordem de entrada
+        Entrada.DespesaIn primeira = despesa("x-1", "2026-07-10", "alimentacao", "Rest A", "30.00");
+        Entrada.DespesaIn estorno = despesa("x-2", "2026-07-10", "alimentacao", "Rest B", "-40.00");
+        Entrada.DespesaIn segunda = despesa("x-3", "2026-07-10", "alimentacao", "Rest C", "50.00");
+        List<ResultadoDespesa> rs = processar(primeira, estorno, segunda);
+
+        // soma elegivel do dia = 30 + 50 - 40 = 40; primeira consome 30; segunda recebe 10
+        assertEquals(new BigDecimal("30.00"), rs.get(0).valorReembolsado().saida());
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(2).status());
+        assertEquals(new BigDecimal("10.00"), rs.get(2).valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn009_estornoDuplicado_recusadoComoDuplicata")
+    void rn009_estornoDuplicado_recusadoComoDuplicata() {
+        // Ordem §8: RN-004 (passo 3) vem antes de RN-009 (passo 4); estorno duplicado
+        // morre como duplicata e so abate uma vez a soma do dia.
+        Entrada.DespesaIn despesa = despesa("x-1", "2026-07-10", "alimentacao", "Rest", "90.00");
+        Entrada.DespesaIn estorno1 = despesa("x-2", "2026-07-10", "alimentacao", "Rest", "-40.00");
+        Entrada.DespesaIn estorno2 = despesa("x-3", "2026-07-10", "alimentacao", "Rest", "-40.00");
+        List<ResultadoDespesa> rs = processar(despesa, estorno1, estorno2);
+
+        assertTrue(rs.get(2).motivos().contains("Duplicata da despesa x-2"));
+        assertEquals(new BigDecimal("50.00"), rs.get(0).valorReembolsado().saida(),
+                "somente um estorno abate: 90 - 40 = 50");
+    }
+
+    private void assertFalseVazio(ResultadoDespesa r) {
+        org.junit.jupiter.api.Assertions.assertFalse(r.motivos().isEmpty(),
+                "RN-011: toda decisao carrega ao menos um motivo");
+    }
+
+    @Test
     @DisplayName("rn004_duplicataExata_segundaRecusada")
     void rn004_duplicataExata_segundaRecusada() {
         // RN-004 / AMB-006: d-006 e d-007 coincidem em data, categoria, fornecedor e valor.

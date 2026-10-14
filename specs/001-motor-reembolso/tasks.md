@@ -44,7 +44,7 @@
   - **Aceite:** testes `rn004_duplicataExata_segundaRecusada()` (d-006 elegível, d-007 recusada citando `d-006`), `rn004_valorDiferente_naoDuplica()`, `rn004_chaveUsaValorArredondado()` (33,333 vs 33,33 = duplicata).
   - **Commit:**
 
-- [ ] **T-007** — RN-009: estornos (valor negativo)
+- [x] **T-007** — RN-009: estornos (valor negativo)
   - **Atende:** RN-009, AMB-008, DT-004
   - **Aceite:** testes `rn009_estornoSozinho_diaZeradoSemCredito()` (d-009 recusada como estorno; categoria/dia = 0) e `rn009_estornoAbateSomaDoDia()` (90 − 40 = 50 elegível).
   - **Commit:**
