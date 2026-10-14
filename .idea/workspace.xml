@@ -4,7 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-001): implementa estrutura base do motor e testes de validacao">
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-002): implementa Value Object Dinheiro com BigDecimal escala 2 HALF_UP e operacoes imutaveis. test(T-002): adiciona testes unitarios em DinheiroTest para arredondamento operacoes e imutabilidade">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" beforeDir="false" afterPath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -15,6 +16,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Gui-Kol"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Gui-Kol/sdd-desafio.git",
+    "accountId": "06674e5d-c5d5-4920-abed-7ab27dc60cbb"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5,
   &quot;fromUser&quot;: false
@@ -72,7 +85,8 @@
     <MESSAGE value="docs(spec): define especificacao inicial do motor de reembolso e registra decisoes" />
     <MESSAGE value="docs(plan): adiciona plano arquitetural e backlog de tarefas T-001 a T-0NN" />
     <MESSAGE value="feat(T-001): implementa estrutura base do motor e testes de validacao" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(T-001): implementa estrutura base do motor e testes de validacao" />
+    <MESSAGE value="feat(T-002): implementa Value Object Dinheiro com BigDecimal escala 2 HALF_UP e operacoes imutaveis. test(T-002): adiciona testes unitarios em DinheiroTest para arredondamento operacoes e imutabilidade" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(T-002): implementa Value Object Dinheiro com BigDecimal escala 2 HALF_UP e operacoes imutaveis. test(T-002): adiciona testes unitarios em DinheiroTest para arredondamento operacoes e imutabilidade" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

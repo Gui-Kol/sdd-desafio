@@ -22,7 +22,7 @@
   - **Aceite:** testes `DinheiroTest`: `de("33.333")` → `33.33`; `de("0.005")` → `0.01`; adicionar/subtrair/comparar com precisão; `ZERO` existe; imutabilidade.
   - **Commit:**
 
-- [ ] **T-003** — Modelos de entrada + leitura de JSON (io/ingestao)
+- [x] **T-003** — Modelos de entrada + leitura de JSON (io/ingestao)
   - **Atende:** spec §4 entrada; AMB-005 (default de `em_viagem`)
   - **Aceite:** teste `IngestaoTest`: lê `exemplos/despesas-exemplo.json` em memória; `periodo.em_viagem` ausente → `false`; `valor` preservado como string no record; erro legível em JSON malformado.
   - **Commit:**
