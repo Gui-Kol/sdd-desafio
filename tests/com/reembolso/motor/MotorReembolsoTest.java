@@ -160,6 +160,134 @@ class MotorReembolsoTest {
     }
 
     @Test
+    @DisplayName("rn004_duplicataExata_segundaRecusada")
+    void rn004_duplicataExata_segundaRecusada() {
+        // RN-004 / AMB-006: d-006 e d-007 coincidem em data, categoria, fornecedor e valor.
+        // A primeira (d-006) permanece elegivel; d-007 e recusada citando d-006.
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+
+        ResultadoDespesa d006 = resultado.get("d-006");
+        assertEquals(ResultadoDespesa.Status.APROVADA, d006.status());
+        assertEquals(new BigDecimal("54.90"), d006.valorReembolsado().saida());
+
+        ResultadoDespesa d007 = resultado.get("d-007");
+        assertEquals(ResultadoDespesa.Status.RECUSADA, d007.status());
+        assertEquals(new BigDecimal("0.00"), d007.valorReembolsado().saida());
+        assertEquals(new BigDecimal("54.90"), d007.valorSolicitado().saida());
+        assertTrue(d007.motivos().contains("Duplicata da despesa d-006"),
+                "motivo da RN-004 deve citar a original: " + d007.motivos());
+    }
+
+    @Test
+    @DisplayName("rn004_valorDiferente_naoDuplica")
+    void rn004_valorDiferente_naoDuplica() {
+        // RN-004: mesma data/categoria/fornecedor, mas valores a mais de R$ 0,01 -> nao duplica
+        ResultadoDespesa[] rs = processarParDuplicata("54.90", "55.00");
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs[0].status());
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs[1].status(),
+                "diferenca acima de R$ 0,01 nao configura duplicata");
+    }
+
+    @Test
+    @DisplayName("rn004_chaveUsaValorArredondado")
+    void rn004_chaveUsaValorArredondado() {
+        // RN-004 + RN-010: 33,333 arredonda para 33,33 na entrada; portanto
+        // 33,333 e 33,33 colidem na chave de duplicata (DT-002).
+        ResultadoDespesa[] rs = processarParDuplicata("33.333", "33.33");
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs[0].status());
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs[1].status());
+        assertTrue(rs[1].motivos().contains("Duplicata da despesa x-1"),
+                "segundo item recusado citando o primeiro: " + rs[1].motivos());
+    }
+
+    @Test
+    @DisplayName("rn004_toleranciaDeUmCentavo_duplica")
+    void rn004_toleranciaDeUmCentavo_duplica() {
+        // RN-004: exatamente R$ 0,01 de diferenca ainda e "o mesmo valor"
+        ResultadoDespesa[] rs = processarParDuplicata("54.90", "54.91");
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs[0].status());
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs[1].status());
+    }
+
+    @Test
+    @DisplayName("rn004_fornecedorDiferente_naoDuplica")
+    void rn004_fornecedorDiferente_naoDuplica() {
+        // RN-004: fornecedor faz parte da chave
+        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "alimentacao", "Bistro A", "54.90");
+        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "alimentacao", "Bistro B", "54.90");
+        List<ResultadoDespesa> rs = processar(a, b);
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(1).status());
+    }
+
+    @Test
+    @DisplayName("rn004_categoriaNormalizadaNaChave")
+    void rn004_categoriaNormalizadaNaChave() {
+        // RN-004 + RN-001: a chave usa a categoria normalizada; "ALIMENTACAO" duplica "alimentacao"
+        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "alimentacao", "Bistro", "54.90");
+        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "ALIMENTACAO", "Bistro", "54.90");
+        List<ResultadoDespesa> rs = processar(a, b);
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(1).status());
+        assertTrue(rs.get(1).motivos().contains("Duplicata da despesa x-1"));
+    }
+
+    @Test
+    @DisplayName("rn004_datasDiferentes_naoDuplica")
+    void rn004_datasDiferentes_naoDuplica() {
+        // RN-004: data faz parte da chave
+        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "alimentacao", "Bistro", "54.90");
+        Entrada.DespesaIn b = despesa("x-2", "2026-07-10", "alimentacao", "Bistro", "54.90");
+        List<ResultadoDespesa> rs = processar(a, b);
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(1).status());
+    }
+
+    @Test
+    @DisplayName("rn004_originalJaRecusada_naoGeraDuplicata")
+    void rn004_originalJaRecusada_naoGeraDuplicata() {
+        // §8: duplicata so e detectada contra itens que sobreviveram aos passos anteriores.
+        // Primeiro item fora do periodo (RN-003) nao pode ser "a original" de uma duplicata.
+        Entrada.DespesaIn foraDoPeriodo = despesa("x-1", "2026-04-09", "alimentacao", "Bistro", "54.90");
+        Entrada.DespesaIn dentroDoPeriodo = despesa("x-2", "2026-07-09", "alimentacao", "Bistro", "54.90");
+        List<ResultadoDespesa> rs = processar(foraDoPeriodo, dentroDoPeriodo);
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(0).status());
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(1).status(),
+                "item elegivel nao e duplicata de item ja recusado");
+    }
+
+    @Test
+    @DisplayName("rn004_terceiraOcorrencia_citaAPrimeira")
+    void rn004_terceiraOcorrencia_citaAPrimeira() {
+        // RN-004: todas exceto a primeira sao recusadas; a citacao aponta a primeira da entrada
+        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "alimentacao", "Bistro", "54.90");
+        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "alimentacao", "Bistro", "54.90");
+        Entrada.DespesaIn c = despesa("x-3", "2026-07-09", "alimentacao", "Bistro", "54.90");
+        List<ResultadoDespesa> rs = processar(a, b, c);
+        assertTrue(rs.get(2).motivos().contains("Duplicata da despesa x-1"),
+                "a original permanece sendo a primeira da ordem de entrada: " + rs.get(2).motivos());
+    }
+
+    private ResultadoDespesa[] processarParDuplicata(String valor1, String valor2) {
+        Entrada.DespesaIn a = despesa("x-1", "2026-07-09", "alimentacao", "Bistro", valor1);
+        Entrada.DespesaIn b = despesa("x-2", "2026-07-09", "alimentacao", "Bistro", valor2);
+        List<ResultadoDespesa> rs = processar(a, b);
+        return new ResultadoDespesa[]{rs.get(0), rs.get(1)};
+    }
+
+    private Entrada.DespesaIn despesa(String id, String data, String categoria,
+                                      String fornecedor, String valor) {
+        return new Entrada.DespesaIn(id, java.time.LocalDate.parse(data), categoria,
+                "teste", fornecedor, valor, true);
+    }
+
+    private List<ResultadoDespesa> processar(Entrada.DespesaIn... despesas) {
+        Entrada entrada = new Entrada(
+                new Entrada.Colaborador("c-1", "X", "CC"),
+                new Entrada.Periodo("2026-07",
+                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
+                List.of(despesas));
+        return new MotorReembolso().processar(entrada);
+    }
+
+    @Test
     @DisplayName("rn002_todaCategoriaForaDoCatalogo_recusaIntegral")
     void rn002_todaCategoriaForaDoCatalogo_recusaIntegral() {
         // RN-002: recusa e integral (reembolso zero), qualquer que seja o valor

@@ -39,7 +39,7 @@
   - **Aceite:** testes `rn003_despesaAbrilEmJulho_recusada()` (d-008) e `rn003_dataNoUltimoDia_elegivel()` (2026-07-31 passa).
   - **Commit:**
 
-- [ ] **T-006** — RN-004: duplicatas (mesma data+categoria+fornecedor+valor, tolerância R$ 0,01)
+- [x] **T-006** — RN-004: duplicatas (mesma data+categoria+fornecedor+valor, tolerância R$ 0,01)
   - **Atende:** RN-004, AMB-006, DT-002
   - **Aceite:** testes `rn004_duplicataExata_segundaRecusada()` (d-006 elegível, d-007 recusada citando `d-006`), `rn004_valorDiferente_naoDuplica()`, `rn004_chaveUsaValorArredondado()` (33,333 vs 33,33 = duplicata).
   - **Commit:**
