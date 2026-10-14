@@ -53,9 +53,6 @@ public final class MotorReembolso {
     public static final String MOTIVO_REDUZIDA_POR_ESTORNO = "Reduzida por estorno: abatida da soma da categoria no dia";
     public static final String MOTIVO_SEM_NOTA_FISCAL = "Despesa acima de R$ 100,00 sem nota fiscal";
 
-    /** RN-005: gatilho de nota fiscal — estritamente maior que R$ 100,00 (AMB-003). */
-    private static final Dinheiro GATILHO_NOTA_FISCAL = Dinheiro.de("100.00");
-
     /** Tolerancia da RN-004: valores a ate R$ 0,01 de distancia sao "o mesmo valor". */
     private static final Dinheiro TOLERANCIA_DUPLICATA = Dinheiro.de("0.01");
 
@@ -115,7 +112,8 @@ public final class MotorReembolso {
             }
 
             // RN-005: valor individual > R$ 100,00 exige nota fiscal; sem nota -> recusa integral
-            if (valor.maiorQue(GATILHO_NOTA_FISCAL) && !despesa.temNotaFiscal()) {
+            // RN-008 / AMB-005: o gatilho de nota NAO e ampliado em viagem (leitura via Politica)
+            if (valor.maiorQue(Politica.gatilhoNotaFiscal(periodo.emViagem())) && !despesa.temNotaFiscal()) {
                 resultados[indice] = recusada(despesa.id(), valor, MOTIVO_SEM_NOTA_FISCAL);
                 indice++;
                 continue;

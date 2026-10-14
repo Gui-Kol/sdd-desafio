@@ -56,7 +56,7 @@
 
 ## Fase 3 — Limites, agregação e casos de borda
 
-- [ ] **T-009** — RN-008: objeto `Politica` + fator de viagem (+50%)
+- [x] **T-009** — RN-008: objeto `Politica` + fator de viagem (+50%)
   - **Atende:** RN-008, AMB-005
   - **Aceite:** testes `PoliticaTest.limite_emViagem_amplia50porCento()` (60→90, 80→120, 250→375) e `PoliticaTest.gatilhoNota_emViagem_naoAmplia()`.
   - **Commit:**
