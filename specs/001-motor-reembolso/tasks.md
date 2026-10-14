@@ -88,7 +88,7 @@
   - **Aceite:** teste de integração `SaidaTest`: entrada pequena → JSON com `colaborador_id`, `competencia`, `total_solicitado`, `total_reembolsado`, `despesas[]` com os 5 campos; números serializados com 2 casas.
   - **Commit:**
 
-- [ ] **T-015** — CLI `calcular --input --output` (args à mão, DT-005)
+- [x] **T-015** — CLI `calcular --input --output` (args à mão, DT-005)
   - **Atende:** interface fixa do enunciado
   - **Aceite:** teste ponta a ponta `CliE2ETest`: roda binário/wrapper com `--input exemplos/despesas-exemplo.json --output out.json`; arquivo criado; código de saída 0; uso errado → código 2 com ajuda.
   - **Commit:**

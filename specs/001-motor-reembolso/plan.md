@@ -118,7 +118,7 @@ Toda leitura de limite passa por `Politica.limite(categoria, emViagem)` — um �
 ### DT-005 — CLI mínima feita à mão
 
 **Contexto:** a interface é fixa: `calcular --input X --output Y`.
-**Decisão:** parser de 20 linhas no pacote `cli`; erro de uso imprime ajuda e sai com código 2. Lembrete: o enunciado pede `<seu-comando> calcular ...` — o comando do projeto será `mvn -q exec:java -Dexec.args="calcular --input ... --output ..."` e um wrapper `reembolso.cmd`/`.sh` gerado no build.
+**Decisão:** parser de 20 linhas no pacote `cli`; erro de uso imprime ajuda e sai com código 2. Lembrete: o enunciado pede `<seu-comando> calcular ...` — o comando do projeto é o wrapper `reembolso.cmd`/`.sh`, que compila na 1ª execução e roda `java -cp` direto para propagar exatamente os códigos de saída (0/1/2); `mvn exec:java` segue disponível mas achata os códigos para 0/1.
 **Alternativa descartada:** picocli (ver tabela de stack).
 **Consequência:** zero dependência de arg-parsing; se surgir subcomando novo, a gente reavalia.
 
