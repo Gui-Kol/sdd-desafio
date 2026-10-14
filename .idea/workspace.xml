@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="docs(sessions): salva registro exportado da sessao 01 de especificacao e desenvolvimento">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-004): implementa regras de reembolso de alimentacao e testes">
       <change beforePath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" beforeDir="false" afterPath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/reembolso/motor/MotorReembolso.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/reembolso/motor/MotorReembolso.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/com/reembolso/motor/MotorReembolsoTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/tests/com/reembolso/motor/MotorReembolsoTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,7 +89,8 @@
     <MESSAGE value="feat(T-002): implementa Value Object Dinheiro com BigDecimal escala 2 HALF_UP e operacoes imutaveis. test(T-002): adiciona testes unitarios em DinheiroTest para arredondamento operacoes e imutabilidade" />
     <MESSAGE value="feat(T-003): adiciona records de entrada e leitor de JSON com default false para em_viagem · test(T-003): adiciona testes em IngestaoTest validando a leitura do JSON do exemplo e tratamento de atributos ausentes" />
     <MESSAGE value="docs(sessions): salva registro exportado da sessao 01 de especificacao e desenvolvimento" />
-    <option name="LAST_COMMIT_MESSAGE" value="docs(sessions): salva registro exportado da sessao 01 de especificacao e desenvolvimento" />
+    <MESSAGE value="feat(T-004): implementa regras de reembolso de alimentacao e testes" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(T-004): implementa regras de reembolso de alimentacao e testes" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

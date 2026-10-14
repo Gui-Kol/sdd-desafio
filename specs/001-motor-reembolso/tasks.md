@@ -34,7 +34,7 @@
   - **Aceite:** testes `MotorReembolsoTest.rn001_caseInsensitive_alimentacaoReconhecida()` (entrada `"ALIMENTACAO"` ≡ alimentacao) e `rn002_coworking_recusada()` (d-005 análoga recusada com motivo "Categoria fora da política").
   - **Commit:**
 
-- [ ] **T-005** — RN-003: período de competência (inclusive nas pontas)
+- [x] **T-005** — RN-003: período de competência (inclusive nas pontas)
   - **Atende:** RN-003, AMB-007
   - **Aceite:** testes `rn003_despesaAbrilEmJulho_recusada()` (d-008) e `rn003_dataNoUltimoDia_elegivel()` (2026-07-31 passa).
   - **Commit:**
