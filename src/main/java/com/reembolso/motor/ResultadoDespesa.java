@@ -15,7 +15,11 @@ public record ResultadoDespesa(String id,
                                List<String> motivos) {
 
     public ResultadoDespesa {
+        // RN-011: nenhum status nasce sem motivo — o construtor exige lista nao vazia
         motivos = List.copyOf(motivos);
+        if (motivos.isEmpty()) {
+            throw new IllegalArgumentException("RN-011: toda decisao carrega ao menos um motivo");
+        }
     }
 
     public enum Status {

@@ -71,7 +71,7 @@
   - **Aceite:** testes `rn007_hospedagem480_cortaEm250()` (d-010 parcial) e `rn007_hospedagemNaoAgregaPorDia()` (dois lançamentos de hospedagem não dividem cota).
   - **Commit:**
 
-- [ ] **T-012** — RN-011 + RN-010 na materialização: motivos obrigatórios e saída arredondada
+- [x] **T-012** — RN-011 + RN-010 na materialização: motivos obrigatórios e saída arredondada
   - **Atende:** RN-010, RN-011
   - **Aceite:** testes `rn011_nenhumMotivoVazio()` (todas as 14 despesas do exemplo saem com motivo) e `rn010_saidaDuasCasasDecimais()` (33,33 na saída do d-011; totais com 2 casas).
   - **Commit:**

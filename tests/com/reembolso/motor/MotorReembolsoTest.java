@@ -634,6 +634,65 @@ class MotorReembolsoTest {
     }
 
     @Test
+    @DisplayName("rn011_nenhumMotivoVazio")
+    void rn011_nenhumMotivoVazio() {
+        // RN-011: todas as 14 despesas do exemplo saem com ao menos um motivo
+        // legivel — aprovacao integral, corte parcial ou recusa, nunca vazio
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+
+        assertEquals(14, resultado.size(), "o exemplo tem 14 despesas");
+        for (ResultadoDespesa r : resultado.values()) {
+            org.junit.jupiter.api.Assertions.assertFalse(r.motivos().isEmpty(),
+                    "RN-011 violada: despesa " + r.id() + " sem motivo");
+            for (String motivo : r.motivos()) {
+                assertTrue(!motivo.isBlank(),
+                        "motivo ilegivel em " + r.id() + ": [" + motivo + "]");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("rn011_motivoVazio_proibidoNoModelo")
+    void rn011_motivoVazio_proibidoNoModelo() {
+        // RN-011: a garantia e estrutural — nem o modelo aceita decisao sem motivo
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> new ResultadoDespesa("x-1", ResultadoDespesa.Status.APROVADA,
+                        com.reembolso.dominio.Dinheiro.de("10.00"),
+                        com.reembolso.dominio.Dinheiro.de("10.00"),
+                        java.util.List.of()));
+    }
+
+    @Test
+    @DisplayName("rn010_saidaDuasCasasDecimais")
+    void rn010_saidaDuasCasasDecimais() {
+        // RN-010 / AMB-011: d-011 entra como 33,333 e sai 33,33; TODO campo
+        // monetario da saida do exemplo tem exatamente 2 casas decimais
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d011 = resultado.get("d-011");
+
+        assertEquals(new BigDecimal("33.33"), d011.valorReembolsado().saida(),
+                "33,333 arredonda HALF_UP para 33,33 na saida");
+        assertEquals(2, d011.valorReembolsado().saida().scale());
+
+        for (ResultadoDespesa r : resultado.values()) {
+            assertEquals(2, r.valorSolicitado().saida().scale(),
+                    "valor_solicitado com 2 casas em " + r.id());
+            assertEquals(2, r.valorReembolsado().saida().scale(),
+                    "valor_reembolsado com 2 casas em " + r.id());
+        }
+
+        // totais: somar campos da saida nunca perde a escala de 2 casas
+        com.reembolso.dominio.Dinheiro totalSolicitado = com.reembolso.dominio.Dinheiro.ZERO;
+        com.reembolso.dominio.Dinheiro totalReembolsado = com.reembolso.dominio.Dinheiro.ZERO;
+        for (ResultadoDespesa r : resultado.values()) {
+            totalSolicitado = totalSolicitado.adicionar(r.valorSolicitado());
+            totalReembolsado = totalReembolsado.adicionar(r.valorReembolsado());
+        }
+        assertEquals(2, totalSolicitado.saida().scale(), "total_solicitado com 2 casas");
+        assertEquals(2, totalReembolsado.saida().scale(), "total_reembolsado com 2 casas");
+    }
+
+    @Test
     @DisplayName("rn002_todaCategoriaForaDoCatalogo_recusaIntegral")
     void rn002_todaCategoriaForaDoCatalogo_recusaIntegral() {
         // RN-002: recusa e integral (reembolso zero), qualquer que seja o valor

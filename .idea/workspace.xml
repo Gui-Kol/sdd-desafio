@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-010): implementa agregacao diaria e corte por ordem de entrada" />
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-011): implementa limite de hospedagem por lancamento" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -92,7 +92,8 @@
     <MESSAGE value="docs: registra log da sessao 02 de desenvolvimento das regras" />
     <MESSAGE value="feat(T-009): implementa objeto Politica e fator de viagem 50%" />
     <MESSAGE value="feat(T-010): implementa agregacao diaria e corte por ordem de entrada" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(T-010): implementa agregacao diaria e corte por ordem de entrada" />
+    <MESSAGE value="feat(T-011): implementa limite de hospedagem por lancamento" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(T-011): implementa limite de hospedagem por lancamento" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
