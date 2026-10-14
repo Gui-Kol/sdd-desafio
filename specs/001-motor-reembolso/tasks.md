@@ -76,7 +76,7 @@
   - **Aceite:** testes `rn011_nenhumMotivoVazio()` (todas as 14 despesas do exemplo saem com motivo) e `rn010_saidaDuasCasasDecimais()` (33,33 na saída do d-011; totais com 2 casas).
   - **Commit:**
 
-- [ ] **T-013** — Cobertura dos casos de borda restantes da spec §7 (tabela)
+- [x] **T-013** — Cobertura dos casos de borda restantes da spec §7 (tabela)
   - **Atende:** AMB-013 e linhas não cobertas acima
   - **Aceite:** testes `amb013_sabadoPlantao_elegivel()` (d-012) e o caso "estorno sobre cota já cortada" da tabela §7; cada linha da tabela mapeia para um teste com RN/AMB no nome.
   - **Commit:**

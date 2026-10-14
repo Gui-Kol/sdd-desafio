@@ -693,6 +693,70 @@ class MotorReembolsoTest {
     }
 
     @Test
+    @DisplayName("amb013_sabadoPlantao_elegivel")
+    void amb013_sabadoPlantao_elegivel() {
+        // AMB-013: a politica nao distingue dia da semana — d-012 (sabado, plantao,
+        // 47,20 alimentacao) e elegivel normalmente dentro do periodo
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d012 = resultado.get("d-012");
+
+        assertEquals(java.time.DayOfWeek.SATURDAY,
+                java.time.LocalDate.of(2026, 7, 18).getDayOfWeek(),
+                "2026-07-18 e sabado");
+        assertEquals(ResultadoDespesa.Status.APROVADA, d012.status());
+        assertEquals(new BigDecimal("47.20"), d012.valorReembolsado().saida());
+        assertTrue(d012.motivos().contains("Aprovada integralmente"));
+    }
+
+    @Test
+    @DisplayName("rn009_rn006_estornoSobreCotaJaCortada_semCorteNemCredito")
+    void rn006_rn009_estornoSobreCotaJaCortada_semCorteNemCredito() {
+        // Tabela §7 "Estorno sobre cota ja cortada": alimentacao 90 + estorno -40
+        // no mesmo dia -> soma elegivel = 50 (< teto de 60), portanto SEM corte
+        // por limite e SEM credito residual ao colaborador.
+        Entrada.DespesaIn despesa = despesa("x-1", "2026-07-10", "alimentacao", "Rest", "90.00");
+        Entrada.DespesaIn estorno = despesa("x-2", "2026-07-10", "alimentacao", "Rest", "-40.00");
+        List<ResultadoDespesa> rs = processar(despesa, estorno);
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status());
+        assertEquals(new BigDecimal("50.00"), rs.get(0).valorReembolsado().saida(),
+                "soma elegivel = 90 - 40 = 50, abaixo do teto: o unico efeito e o abatimento");
+        assertTrue(rs.get(0).motivos().contains(MotorReembolso.MOTIVO_REDUZIDA_POR_ESTORNO),
+                "motivo de estorno, nunca de teto: " + rs.get(0).motivos());
+        assertTrue(rs.get(0).motivos().stream()
+                        .noneMatch(m -> m.equals(MotorReembolso.MOTIVO_CORTE_LIMITE_DIARIO)),
+                "sem corte por limite — a soma (50) nao ultrapassou o teto (60)");
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(1).status());
+        assertEquals(new BigDecimal("0.00"), rs.get(1).valorReembolsado().saida(),
+                "sem credito residual: nada volta ao colaborador");
+    }
+
+    @Test
+    @DisplayName("rn008_multiplosLimitesEmViagem_hospedagem400cortaEm375")
+    void rn007_rn008_multiplosLimitesEmViagem_hospedagem400cortaEm375() {
+        // Tabela §7 "Multiplos limites ampliados": em_viagem = true, hospedagem
+        // 400,00 -> parcial em 375,00 (teto por lancamento +50%, RN-007 + RN-008);
+        // e alimentacao 90,00 no dia passa integral (teto diario 60 -> 90)
+        Entrada entrada = new Entrada(
+                new Entrada.Colaborador("c-1", "X", "CC"),
+                new Entrada.Periodo("2026-07",
+                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), true),
+                List.of(
+                        despesa("x-1", "2026-07-10", "hospedagem", "Hotel", "400.00"),
+                        despesa("x-2", "2026-07-10", "alimentacao", "Rest", "90.00")));
+        List<ResultadoDespesa> rs = new MotorReembolso().processar(entrada);
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status());
+        assertEquals(new BigDecimal("375.00"), rs.get(0).valorReembolsado().saida(),
+                "RN-007 + RN-008: teto por lancamento ampliado 250 -> 375");
+        assertTrue(rs.get(0).motivos().contains(MotorReembolso.MOTIVO_CORTE_LIMITE_LANCAMENTO));
+
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(1).status());
+        assertEquals(new BigDecimal("90.00"), rs.get(1).valorReembolsado().saida(),
+                "RN-006 + RN-008: teto diario ampliado 60 -> 90 — sem viagem seria cortado em 60");
+    }
+
+    @Test
     @DisplayName("rn002_todaCategoriaForaDoCatalogo_recusaIntegral")
     void rn002_todaCategoriaForaDoCatalogo_recusaIntegral() {
         // RN-002: recusa e integral (reembolso zero), qualquer que seja o valor
