@@ -66,7 +66,7 @@
   - **Aceite:** testes `rn006_duasAlimentacoesMesmoDia_cortaExcedenteEmOrdem()` (72,50 + 38,00 → primeira 60,00; segunda 0,00), `rn006_recusadaNaoGastaCota()` (d-004 recusada não reduz cota do d-003), `rn006_statusParcialQuandoCortado()`.
   - **Commit:**
 
-- [ ] **T-011** — RN-007: hospedagem limitada por lançamento
+- [x] **T-011** — RN-007: hospedagem limitada por lançamento
   - **Atende:** RN-007, AMB-010
   - **Aceite:** testes `rn007_hospedagem480_cortaEm250()` (d-010 parcial) e `rn007_hospedagemNaoAgregaPorDia()` (dois lançamentos de hospedagem não dividem cota).
   - **Commit:**

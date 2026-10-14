@@ -42,13 +42,17 @@ import com.reembolso.io.Entrada;
  *       RN-002..RN-005 e RN-009), com corte do excedente em ordem de entrada
  *       (AMB-001, AMB-002, AMB-012). O teto e resolvido via {@link Politica},
  *       unico ponto do fator de viagem (RN-008).</li>
+ *   <li>RN-007 — hospedagem limita-se a R$ 250,00 por lancamento (cada um e uma
+ *       unica fatura de diaria, AMB-010); o excedente e cortado e os limites
+ *       diarios da RN-006 nao se aplicam a hospedagem.</li>
  * </ol>
  *
  * <p>O processamento e feito em duas fases: primeiro as recusas por item
  * (passos 1-4), depois a distribuicao da soma elegivel de cada dia/categoria
  * (limitada ao teto diario da RN-006) aos itens positivos em ordem de entrada —
  * o abatimento do estorno e um efeito de dia inteiro, nao de posicao na lista.
- * O limite por lancamento de hospedagem (RN-007) entra na proxima task.
+ * Hospedagem nao entra nessa agregacao diaria: corta-se cada lancamento no seu
+ * proprio teto (RN-007).
  */
 public final class MotorReembolso {
 
@@ -58,6 +62,7 @@ public final class MotorReembolso {
     public static final String MOTIVO_REDUZIDA_POR_ESTORNO = "Reduzida por estorno: abatida da soma da categoria no dia";
     public static final String MOTIVO_SEM_NOTA_FISCAL = "Despesa acima de R$ 100,00 sem nota fiscal";
     public static final String MOTIVO_CORTE_LIMITE_DIARIO = "Excedente cortado ao limite diário da categoria";
+    public static final String MOTIVO_CORTE_LIMITE_LANCAMENTO = "Excedente cortado ao limite de hospedagem por lançamento";
 
     /** Tolerancia da RN-004: valores a ate R$ 0,01 de distancia sao "o mesmo valor". */
     private static final Dinheiro TOLERANCIA_DUPLICATA = Dinheiro.de("0.01");
@@ -156,9 +161,18 @@ public final class MotorReembolso {
                 return somaElegivel;
             });
             Dinheiro reembolso = p.valor().menorOuIgualA(cota) ? p.valor() : cota;
+            String motivoCorte = motivoCortePorDia.getOrDefault(chave, MOTIVO_REDUZIDA_POR_ESTORNO);
+            if (p.categoria() == Categoria.HOSPEDAGEM) {
+                // RN-007: limite de hospedagem e por LANCAMENTO, nao diario —
+                // cada despesa e cortada individualmente no teto (AMB-010)
+                Dinheiro limiteLancamento = Politica.limite(Categoria.HOSPEDAGEM, periodo.emViagem());
+                if (reembolso.maiorQue(limiteLancamento)) {
+                    reembolso = limiteLancamento;
+                    motivoCorte = MOTIVO_CORTE_LIMITE_LANCAMENTO;
+                }
+            }
             cotaDisponivel.put(chave, cota.subtrair(reembolso));
-            resultados[p.indice()] = aprovada(p.despesa().id(), p.valor(), reembolso,
-                    motivoCortePorDia.getOrDefault(chave, MOTIVO_REDUZIDA_POR_ESTORNO));
+            resultados[p.indice()] = aprovada(p.despesa().id(), p.valor(), reembolso, motivoCorte);
         }
 
         return List.of(resultados);
@@ -172,7 +186,7 @@ public final class MotorReembolso {
     /**
      * RN-006: teto diario da categoria, resolvido via Politica (RN-008 aplica o
      * fator de viagem aqui). Hospedagem NAO tem agregacao diaria — seu limite e
-     * por lancamento (RN-007, task T-011) — entao devolve null por ora.
+     * por lancamento (RN-007), aplicado por item na fase 2.
      */
     private Dinheiro tetoDiario(Categoria categoria, boolean emViagem) {
         return switch (categoria) {

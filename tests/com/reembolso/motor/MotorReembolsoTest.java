@@ -70,7 +70,7 @@ class MotorReembolsoTest {
 
         assertEquals(ResultadoDespesa.Status.PARCIAL, resultado.get("d-001").status()); // alimentacao (corta na RN-006)
         assertEquals(ResultadoDespesa.Status.PARCIAL, resultado.get("d-003").status()); // transporte_urbano (corta na RN-006)
-        assertEquals(ResultadoDespesa.Status.APROVADA, resultado.get("d-010").status()); // hospedagem (RN-007 na T-011)
+        assertEquals(ResultadoDespesa.Status.PARCIAL, resultado.get("d-010").status()); // hospedagem (corta no teto por lancamento, RN-007)
     }
 
     @Test
@@ -447,7 +447,12 @@ class MotorReembolsoTest {
         Entrada.DespesaIn comNota = new Entrada.DespesaIn("x-1",
                 java.time.LocalDate.of(2026, 7, 10), "hospedagem", "teste", "Hotel", "500.00", true);
         List<ResultadoDespesa> rs = processar(comNota);
-        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(0).status());
+        org.junit.jupiter.api.Assertions.assertNotEquals(ResultadoDespesa.Status.RECUSADA, rs.get(0).status(),
+                "com nota, 500,00 nao e recusada por RN-005");
+        assertEquals(new BigDecimal("250.00"), rs.get(0).valorReembolsado().saida(),
+                "o corte posterior e o teto por lancamento da RN-007, nao falta de nota");
+        org.junit.jupiter.api.Assertions.assertTrue(
+                rs.get(0).motivos().stream().noneMatch(m -> m.equals(MotorReembolso.MOTIVO_SEM_NOTA_FISCAL)));
     }
 
     @Test
@@ -571,6 +576,61 @@ class MotorReembolsoTest {
         List<ResultadoDespesa> rs = processar(despesa, estorno);
 
         assertEquals(new BigDecimal("50.00"), rs.get(0).valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn007_hospedagem480_cortaEm250")
+    void rn007_hospedagem480_cortaEm250() {
+        // RN-007 / AMB-010: d-010 (hospedagem 480,00 com nota) e cortada no limite
+        // por lancamento de R$ 250,00 -> parcial 250,00
+        Map<String, ResultadoDespesa> resultado = processarExemplo();
+        ResultadoDespesa d010 = resultado.get("d-010");
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, d010.status());
+        assertEquals(new BigDecimal("480.00"), d010.valorSolicitado().saida());
+        assertEquals(new BigDecimal("250.00"), d010.valorReembolsado().saida());
+        assertTrue(d010.motivos().contains(MotorReembolso.MOTIVO_CORTE_LIMITE_LANCAMENTO),
+                "motivo obrigatorio do corte RN-007: " + d010.motivos());
+    }
+
+    @Test
+    @DisplayName("rn007_hospedagemNaoAgregaPorDia")
+    void rn007_hospedagemNaoAgregaPorDia() {
+        // RN-007: o limite NAO e diario agregado — dois lancamentos de hospedagem no
+        // mesmo dia nao dividem cota; cada um e cortado no seu proprio teto de 250,00
+        Entrada.DespesaIn primeira = despesa("x-1", "2026-07-10", "hospedagem", "Hotel A", "200.00");
+        Entrada.DespesaIn segunda = despesa("x-2", "2026-07-10", "hospedagem", "Hotel B", "200.00");
+        List<ResultadoDespesa> rs = processar(primeira, segunda);
+
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(0).status());
+        assertEquals(new BigDecimal("200.00"), rs.get(0).valorReembolsado().saida());
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(1).status());
+        assertEquals(new BigDecimal("200.00"), rs.get(1).valorReembolsado().saida(),
+                "segundo lancamento reembolsado integralmente — hospedagem nao agrega por dia");
+    }
+
+    @Test
+    @DisplayName("rn007_cadaLancamentoCortadoNoProprioTeto")
+    void rn007_cadaLancamentoCortadoNoProprioTeto() {
+        // RN-007: lancamentos acima e abaixo do teto no mesmo dia — so o excedente
+        // de cada um e cortado; o abaixo do teto passa integral
+        Entrada.DespesaIn acima = despesa("x-1", "2026-07-10", "hospedagem", "Hotel A", "300.00");
+        Entrada.DespesaIn abaixo = despesa("x-2", "2026-07-10", "hospedagem", "Hotel B", "100.00");
+        List<ResultadoDespesa> rs = processar(acima, abaixo);
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status());
+        assertEquals(new BigDecimal("250.00"), rs.get(0).valorReembolsado().saida());
+        assertEquals(ResultadoDespesa.Status.APROVADA, rs.get(1).status());
+        assertEquals(new BigDecimal("100.00"), rs.get(1).valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn007_hospedagemExataNoLimite_integral")
+    void rn007_hospedagemExataNoLimite_integral() {
+        // RN-007: fronteira — exatamente 250,00 nao e cortada
+        ResultadoDespesa r = processarUnica("x-1", "2026-07-10", "hospedagem", "250.00");
+        assertEquals(ResultadoDespesa.Status.APROVADA, r.status());
+        assertEquals(new BigDecimal("250.00"), r.valorReembolsado().saida());
     }
 
     @Test
