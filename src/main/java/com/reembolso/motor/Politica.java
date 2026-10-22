@@ -111,6 +111,11 @@ public final class Politica {
         return dados.notaFiscalObrigatoriaAcimaDe();
     }
 
+    /** Moeda base em que limites, gatilho e valores da saída são expressos (spec §4, RN-013). */
+    public String moedaBase() {
+        return dados.moedaBase();
+    }
+
     /**
      * RN-012: limite vigente da categoria para o centro de custo — override do
      * CC ou herança do bloco {@code padrao} (AMB-014/AMB-015). Vazio =

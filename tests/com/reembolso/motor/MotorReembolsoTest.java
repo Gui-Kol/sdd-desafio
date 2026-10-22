@@ -1,6 +1,7 @@
 package com.reembolso.motor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.reembolso.PoliticaV3;
 import com.reembolso.dominio.Categoria;
 import com.reembolso.dominio.Dinheiro;
+import com.reembolso.io.Cambio;
 import com.reembolso.io.Entrada;
 import com.reembolso.io.Ingestao;
 import com.reembolso.io.PoliticaV4;
@@ -666,7 +668,8 @@ class MotorReembolsoTest {
                 () -> new ResultadoDespesa("x-1", ResultadoDespesa.Status.APROVADA,
                         com.reembolso.dominio.Dinheiro.de("10.00"),
                         com.reembolso.dominio.Dinheiro.de("10.00"),
-                        java.util.List.of()));
+                        java.util.List.of(),
+                        null));
     }
 
     @Test
@@ -799,15 +802,10 @@ class MotorReembolsoTest {
                 padrao, Map.of(), Dinheiro.de(gatilho), BigDecimal.valueOf(acrescimoPercentual)));
     }
 
-    /** Processa sob a política informada, com centro de custo e viagem explícitos. */
+    /** Processa sob a política informada, com centro de custo e viagem explícitos (sem câmbio). */
     private List<ResultadoDespesa> processarCom(Politica politica, String centroCusto,
                                                  boolean emViagem, Entrada.DespesaIn... despesas) {
-        Entrada entrada = new Entrada(
-                new Entrada.Colaborador("c-1", "X", centroCusto),
-                new Entrada.Periodo("2026-07",
-                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), emViagem),
-                List.of(despesas));
-        return new MotorReembolso().processar(entrada, politica);
+        return processarCom(politica, null, centroCusto, emViagem, despesas);
     }
 
     @Test
@@ -895,5 +893,163 @@ class MotorReembolsoTest {
                 despesa("x-2", "2026-07-10", "alimentacao", "Rest", "110.00")).get(0);
         assertEquals(ResultadoDespesa.Status.PARCIAL, semViagem.status());
         assertEquals(new BigDecimal("60.00"), semViagem.valorReembolsado().saida());
+    }
+
+    // ---------------------------------------------------------------- T-020 (D-003): RN-013
+
+    /** A tabela de câmbio real do envelope — PTAX publicada apenas em dias úteis (spec §4). */
+    private Cambio cambioReal() {
+        return Ingestao.lerCambio(java.nio.file.Path.of("exemplos/cambio.json"));
+    }
+
+    /** Processa com política, câmbio, centro de custo e viagem explícitos (RN-013). */
+    private List<ResultadoDespesa> processarCom(Politica politica, Cambio cambio,
+                                                String centroCusto, boolean emViagem,
+                                                Entrada.DespesaIn... despesas) {
+        Entrada entrada = new Entrada(
+                new Entrada.Colaborador("c-1", "X", centroCusto),
+                new Entrada.Periodo("2026-07",
+                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), emViagem),
+                List.of(despesas));
+        return new MotorReembolso().processar(entrada, politica, cambio);
+    }
+
+    /** Despesa em moeda específica (com nota) — o helper `despesa` é BRL fixo. */
+    private Entrada.DespesaIn despesaEmMoeda(String id, String data, String categoria,
+                                             String fornecedor, String valor, String moeda) {
+        return new Entrada.DespesaIn(id, java.time.LocalDate.parse(data), categoria,
+                "teste", fornecedor, valor, moeda, true);
+    }
+
+    @Test
+    @DisplayName("rn013_moedaAusente_tratadaComoBrl")
+    void rn013_moedaAusente_tratadaComoBrl() {
+        // AMB-018: moeda ausente na entrada vira "BRL" (ingestão, T-018) — no motor
+        // é moeda base: sem conversão e sem consulta de taxa, mesmo com câmbio presente.
+        String json = """
+            {
+              "colaborador": {"id": "c-1", "nome": "X", "centro_custo": "CC"},
+              "periodo": {"competencia": "2026-07", "inicio": "2026-07-01", "fim": "2026-07-31"},
+              "despesas": [
+                {"id": "x-1", "data": "2026-07-10", "categoria": "alimentacao",
+                 "descricao": "almoco", "fornecedor": "Rest", "valor": 50.00,
+                 "tem_nota_fiscal": true}
+              ]
+            }
+            """;
+        Entrada entrada = Ingestao.lerDeString(json);
+        List<ResultadoDespesa> rs = new MotorReembolso()
+                .processar(entrada, PoliticaV3.politica(), cambioReal());
+
+        ResultadoDespesa r = rs.get(0);
+        assertEquals(ResultadoDespesa.Status.APROVADA, r.status());
+        assertEquals(new BigDecimal("50.00"), r.valorSolicitado().saida(),
+                "sem conversão: o valor em BRL é o informado");
+        assertNull(r.conversao(), "moeda base não gera conversão nem consulta de taxa");
+    }
+
+    @Test
+    @DisplayName("rn013_convertePelaTaxaDataDaDespesa")
+    void rn013_convertePelaTaxaDataDaDespesa() {
+        // AMB-016: taxa da própria data da despesa — 22 EUR em 2026-07-14 × 5,93
+        ResultadoDespesa r = processarCom(PoliticaV3.politica(), cambioReal(), "CC", false,
+                despesaEmMoeda("x-1", "2026-07-14", "alimentacao", "Taberna", "22.00", "EUR")).get(0);
+
+        assertEquals(new BigDecimal("130.46"), r.valorSolicitado().saida(),
+                "22 × 5,93 = 130,46 — valor_solicitado é o valor em BRL (RN-013/AMB-019)");
+        assertEquals(ResultadoDespesa.Status.PARCIAL, r.status());
+        assertEquals(new BigDecimal("60.00"), r.valorReembolsado().saida(),
+                "teto diário do padrão aplicado sobre o valor convertido (130,46 > 60,00)");
+
+        assertEquals("EUR", r.conversao().moeda());
+        assertEquals(new BigDecimal("22.00"), r.conversao().valorOriginal().saida());
+        assertEquals(new BigDecimal("5.93"), r.conversao().taxa());
+        assertEquals(java.time.LocalDate.of(2026, 7, 14), r.conversao().dataTaxa());
+    }
+
+    @Test
+    @DisplayName("rn013_diaSemCotacao_usaUltimaPublicada")
+    void rn013_diaSemCotacao_usaUltimaPublicada() {
+        // AMB-016: 2026-07-18 é sábado sem cotação — vale a última publicada
+        // (2026-07-17, EUR 5,96); nunca a taxa futura (a de 2026-07-22 daria 178,50).
+        ResultadoDespesa r = processarCom(PoliticaV3.politica(), cambioReal(), "CC", false,
+                despesaEmMoeda("x-1", "2026-07-18", "alimentacao", "Cervejaria", "30.00", "EUR")).get(0);
+
+        assertEquals(new BigDecimal("178.80"), r.valorSolicitado().saida(),
+                "30 × 5,96 = 178,80 — taxa de 2026-07-17, não a futura");
+        assertEquals(new BigDecimal("5.96"), r.conversao().taxa());
+        assertEquals(java.time.LocalDate.of(2026, 7, 17), r.conversao().dataTaxa(),
+                "data da taxa é a da publicação usada, anterior à data da despesa");
+    }
+
+    @Test
+    @DisplayName("rn013_moedaSemCotacao_recusaItemLoteSegue")
+    void rn013_moedaSemCotacao_recusaItemLoteSegue() {
+        // AMB-017: GBP não está na tabela — recusa do item com motivo próprio;
+        // o lote segue e a despesa BRL do mesmo lote é processada normalmente.
+        List<ResultadoDespesa> rs = processarCom(PoliticaV3.politica(), cambioReal(), "CC", false,
+                despesaEmMoeda("x-1", "2026-07-21", "alimentacao", "The Ivy", "55.00", "GBP"),
+                despesa("x-2", "2026-07-10", "alimentacao", "Rest", "50.00"));
+
+        ResultadoDespesa gbp = rs.get(0);
+        assertEquals(ResultadoDespesa.Status.RECUSADA, gbp.status());
+        assertEquals(List.of("Moeda sem cotação disponível"), gbp.motivos());
+        assertEquals(new BigDecimal("0.00"), gbp.valorReembolsado().saida());
+        assertNull(gbp.valorSolicitado(), "sem cotação não há valor em BRL (spec §4/§8)");
+        assertEquals("GBP", gbp.conversao().moeda());
+        assertEquals(new BigDecimal("55.00"), gbp.conversao().valorOriginal().saida());
+        assertNull(gbp.conversao().taxa());
+
+        ResultadoDespesa brl = rs.get(1);
+        assertEquals(ResultadoDespesa.Status.APROVADA, brl.status(), "o lote continua");
+        assertEquals(new BigDecimal("50.00"), brl.valorReembolsado().saida());
+    }
+
+    @Test
+    @DisplayName("rn013_semCambioFornecido_recusaMoedaEstrangeira")
+    void rn013_semCambioFornecido_recusaMoedaEstrangeira() {
+        // Spec §4: câmbio é entrada opcional — sem a tabela, despesa em moeda
+        // estrangeira é recusada como sem cotação (mesma regra da AMB-017).
+        List<ResultadoDespesa> rs = processarCom(PoliticaV3.politica(), null, "CC", false,
+                despesaEmMoeda("x-1", "2026-07-14", "alimentacao", "Taberna", "22.00", "EUR"));
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(0).status());
+        assertEquals(List.of("Moeda sem cotação disponível"), rs.get(0).motivos());
+    }
+
+    @Test
+    @DisplayName("amb019_gatilhoNotaSobreValorConvertido")
+    void amb019_gatilhoNotaSobreValorConvertido() {
+        // AMB-019 / e-005: 40 USD "parecem" R$ 40, mas viram R$ 220,00 (× 5,50 de
+        // 2026-07-20) — o gatilho de nota dispara sobre o valor convertido.
+        Entrada.DespesaIn corrida = new Entrada.DespesaIn("x-1",
+                java.time.LocalDate.parse("2026-07-20"), "transporte_urbano",
+                "teste", "Bolt", "40.00", "USD", false);
+
+        ResultadoDespesa r = processarCom(PoliticaV3.politica(), cambioReal(), "CC", false, corrida).get(0);
+
+        assertEquals(new BigDecimal("220.00"), r.valorSolicitado().saida(),
+                "40 × 5,50 = 220,00 — converte primeiro, decide depois");
+        assertEquals(ResultadoDespesa.Status.RECUSADA, r.status(),
+                "220,00 > 100,00 sem nota → recusada; 40 na moeda original passaria");
+        assertTrue(r.motivos().contains("Despesa acima de R$ 100,00 sem nota fiscal"),
+                "motivo de nota sobre o valor em BRL: " + r.motivos());
+    }
+
+    @Test
+    @DisplayName("amb022_duplicataComparaValorEmBrl")
+    void amb022_duplicataComparaValorEmBrl() {
+        // AMB-022: a chave de duplicata compara o valor em BRL — 100 USD em
+        // 2026-07-21 (× 5,48 = 548,00) e um lançamento de 548,00 BRL no mesmo
+        // dia/fornecedor/categoria são a mesma despesa para a RN-004.
+        List<ResultadoDespesa> rs = processarCom(PoliticaV3.politica(), cambioReal(), "CC", false,
+                despesaEmMoeda("x-1", "2026-07-21", "hospedagem", "Hotel", "100.00", "USD"),
+                despesa("x-2", "2026-07-21", "hospedagem", "Hotel", "548.00"));
+
+        org.junit.jupiter.api.Assertions.assertNotEquals(ResultadoDespesa.Status.RECUSADA, rs.get(0).status(),
+                "a original (USD convertida) segue elegível — cortada no teto por lançamento");
+        assertEquals(ResultadoDespesa.Status.RECUSADA, rs.get(1).status());
+        assertTrue(rs.get(1).motivos().contains("Duplicata da despesa x-1"),
+                "segundo item (BRL) é duplicata do primeiro (USD convertida): " + rs.get(1).motivos());
     }
 }

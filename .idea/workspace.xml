@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="docs(tasks): adiciona tarefas T-018 em diante para cobrir o envelope do Dia 2">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/reembolso/io/Entrada.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/reembolso/io/Entrada.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/reembolso/io/Ingestao.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/reembolso/io/Ingestao.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/com/reembolso/io/IngestaoTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/tests/com/reembolso/io/IngestaoTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/com/reembolso/motor/MotorReembolsoTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/tests/com/reembolso/motor/MotorReembolsoTest.java" afterDir="false" />
-    </list>
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-019): implementa RN-012 com limites por centro de custo vigencia e catalogo dinamico · test(T-019): adiciona testes para overrides por CC fallback padrao limite zero e vigencia" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -106,8 +100,6 @@
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="docs(plan): adiciona plano arquitetural e backlog de tarefas T-001 a T-0NN" />
-    <MESSAGE value="feat(T-001): implementa estrutura base do motor e testes de validacao" />
     <MESSAGE value="feat(T-002): implementa Value Object Dinheiro com BigDecimal escala 2 HALF_UP e operacoes imutaveis. test(T-002): adiciona testes unitarios em DinheiroTest para arredondamento operacoes e imutabilidade" />
     <MESSAGE value="feat(T-003): adiciona records de entrada e leitor de JSON com default false para em_viagem · test(T-003): adiciona testes em IngestaoTest validando a leitura do JSON do exemplo e tratamento de atributos ausentes" />
     <MESSAGE value="docs(sessions): salva registro exportado da sessao 01 de especificacao e desenvolvimento" />
@@ -131,7 +123,9 @@
     <MESSAGE value="chore: adiciona arquivos de dados do envelope do Dia 2" />
     <MESSAGE value="docs(spec): atualiza spec.md e adiciona D-003 no DECISIONS.md para cobrir envelope do Dia 2" />
     <MESSAGE value="docs(tasks): adiciona tarefas T-018 em diante para cobrir o envelope do Dia 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="docs(tasks): adiciona tarefas T-018 em diante para cobrir o envelope do Dia 2" />
+    <MESSAGE value="feat(T-018): implementa ingestao de politica v4 por centro de custo cambio e moeda · test(T-018): adiciona testes em IngestaoTest para politica v4 cambio em memoria e fallback BRL" />
+    <MESSAGE value="feat(T-019): implementa RN-012 com limites por centro de custo vigencia e catalogo dinamico · test(T-019): adiciona testes para overrides por CC fallback padrao limite zero e vigencia" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(T-019): implementa RN-012 com limites por centro de custo vigencia e catalogo dinamico · test(T-019): adiciona testes para overrides por CC fallback padrao limite zero e vigencia" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
