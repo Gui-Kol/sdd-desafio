@@ -24,12 +24,16 @@ import com.reembolso.motor.ResultadoDespesa;
  * (Ingestao -> Motor -> Saida) e afirma o estado de CADA despesa e o
  * total_reembolsado = 585,43. Base fixa de regressao: qualquer mudanca de
  * regra que altere estes numeros invalida a entrega.
+ *
+ * <p>T-019 (D-003): roda sob a politica v3 como dado (sem overrides de centro
+ * de custo) — os numeros dourados sao da v3; a politica v4 real traz override
+ * para o CC do exemplo e e exercida pelos testes do envelope (T-022).
  */
 class ExemploE2ETest {
 
     private Saida processarExemplo() {
         Entrada entrada = Ingestao.ler(java.nio.file.Path.of("exemplos/despesas-exemplo.json"));
-        return Saida.de(entrada, new MotorReembolso().processar(entrada));
+        return Saida.de(entrada, new MotorReembolso().processar(entrada, PoliticaV3.politica()));
     }
 
     @Test

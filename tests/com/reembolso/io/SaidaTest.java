@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.reembolso.PoliticaV3;
 import com.reembolso.materializacao.Saida;
 import com.reembolso.motor.MotorReembolso;
 
@@ -48,7 +49,8 @@ class SaidaTest {
 
     private JsonNode processar(String jsonEntrada) throws Exception {
         Entrada entrada = Ingestao.lerDeString(jsonEntrada);
-        Saida saida = Saida.de(entrada, new MotorReembolso().processar(entrada));
+        Saida saida = Saida.de(entrada,
+                new MotorReembolso().processar(entrada, PoliticaV3.politica()));
         return LEITOR.readTree(EscritorSaida.escreverJson(saida));
     }
 

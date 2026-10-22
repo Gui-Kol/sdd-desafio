@@ -12,9 +12,12 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.reembolso.PoliticaV3;
 import com.reembolso.dominio.Categoria;
+import com.reembolso.dominio.Dinheiro;
 import com.reembolso.io.Entrada;
 import com.reembolso.io.Ingestao;
+import com.reembolso.io.PoliticaV4;
 
 /**
  * T-004 — RN-001 + RN-002: normalizacao de categoria e recusa de categoria
@@ -27,7 +30,7 @@ class MotorReembolsoTest {
 
     private Map<String, ResultadoDespesa> processarExemplo() {
         Entrada entrada = Ingestao.ler(java.nio.file.Path.of("exemplos/despesas-exemplo.json"));
-        List<ResultadoDespesa> resultados = new MotorReembolso().processar(entrada);
+        List<ResultadoDespesa> resultados = new MotorReembolso().processar(entrada, PoliticaV3.politica());
         return resultados.stream().collect(Collectors.toMap(ResultadoDespesa::id, Function.identity()));
     }
 
@@ -76,12 +79,16 @@ class MotorReembolsoTest {
     @Test
     @DisplayName("rn001_trimECase_variacoesNormalizam")
     void rn001_trimECase_variacoesNormalizam() {
-        // RN-001: trim + case-insensitive em qualquer variacao
+        // RN-001 / AMB-009: trim + case-insensitive em qualquer variacao
         assertEquals(Categoria.ALIMENTACAO, Categoria.normalizar("  ALIMENTACAO ").orElseThrow());
         assertEquals(Categoria.ALIMENTACAO, Categoria.normalizar("AlImEnTaCaO").orElseThrow());
         assertEquals(Categoria.TRANSPORTE_URBANO, Categoria.normalizar(" Transporte_Urbano").orElseThrow());
         assertEquals(Categoria.HOSPEDAGEM, Categoria.normalizar("HOSPEDAGEM").orElseThrow());
-        assertTrue(Categoria.normalizar("coworking").isEmpty());
+        // T-019 / D-003: o catalogo virou dado da politica (RN-012) — a
+        // normalizacao aceita qualquer nome; estar NA politica e decisao da
+        // RN-012, nao da normalizacao
+        assertEquals("representacao", Categoria.normalizar("REPRESENTACAO").orElseThrow().chave());
+        assertEquals("coworking", Categoria.normalizar("coworking").orElseThrow().chave());
         assertTrue(Categoria.normalizar("").isEmpty());
         assertTrue(Categoria.normalizar(null).isEmpty());
     }
@@ -157,7 +164,7 @@ class MotorReembolsoTest {
                 new Entrada.Periodo("2026-07",
                         java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
                 List.of(despesa));
-        return new MotorReembolso().processar(entrada).get(0);
+        return new MotorReembolso().processar(entrada, PoliticaV3.politica()).get(0);
     }
 
     @Test
@@ -393,7 +400,7 @@ class MotorReembolsoTest {
                 new Entrada.Periodo("2026-07",
                         java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
                 List.of(despesas));
-        return new MotorReembolso().processar(entrada);
+        return new MotorReembolso().processar(entrada, PoliticaV3.politica());
     }
 
     @Test
@@ -408,7 +415,7 @@ class MotorReembolsoTest {
         // a despesa NAO foi recusada por falta de nota, que e o ponto da fronteira
         assertEquals(ResultadoDespesa.Status.PARCIAL, d003.status());
         assertEquals(new BigDecimal("80.00"), d003.valorReembolsado().saida());
-        assertTrue(d003.motivos().stream().noneMatch(m -> m.equals(MotorReembolso.MOTIVO_SEM_NOTA_FISCAL)));
+        assertTrue(d003.motivos().stream().noneMatch(m -> m.equals("Despesa acima de R$ 100,00 sem nota fiscal")));
     }
 
     @Test
@@ -452,7 +459,7 @@ class MotorReembolsoTest {
         assertEquals(new BigDecimal("250.00"), rs.get(0).valorReembolsado().saida(),
                 "o corte posterior e o teto por lancamento da RN-007, nao falta de nota");
         org.junit.jupiter.api.Assertions.assertTrue(
-                rs.get(0).motivos().stream().noneMatch(m -> m.equals(MotorReembolso.MOTIVO_SEM_NOTA_FISCAL)));
+                rs.get(0).motivos().stream().noneMatch(m -> m.equals("Despesa acima de R$ 100,00 sem nota fiscal")));
     }
 
     @Test
@@ -484,7 +491,7 @@ class MotorReembolsoTest {
                 new Entrada.Periodo("2026-07",
                         java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
                 List.of(despesa));
-        return new MotorReembolso().processar(entrada).get(0);
+        return new MotorReembolso().processar(entrada, PoliticaV3.politica()).get(0);
     }
 
     @Test
@@ -744,7 +751,7 @@ class MotorReembolsoTest {
                 List.of(
                         despesa("x-1", "2026-07-10", "hospedagem", "Hotel", "400.00"),
                         despesa("x-2", "2026-07-10", "alimentacao", "Rest", "90.00")));
-        List<ResultadoDespesa> rs = new MotorReembolso().processar(entrada);
+        List<ResultadoDespesa> rs = new MotorReembolso().processar(entrada, PoliticaV3.politica());
 
         assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status());
         assertEquals(new BigDecimal("375.00"), rs.get(0).valorReembolsado().saida(),
@@ -767,11 +774,126 @@ class MotorReembolsoTest {
                 new Entrada.Periodo("2026-07", java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),
                 List.of(coworking));
 
-        ResultadoDespesa r = new MotorReembolso().processar(entrada).get(0);
+        ResultadoDespesa r = new MotorReembolso().processar(entrada, PoliticaV3.politica()).get(0);
 
         assertEquals(ResultadoDespesa.Status.RECUSADA, r.status());
         assertEquals(new BigDecimal("0.00"), r.valorReembolsado().saida());
         assertEquals(List.of("Categoria fora da política"), r.motivos(),
                 "RN-011: recusa carrega motivo legivel");
+    }
+
+    // ---------------------------------------------------------------- T-019 (D-003): RN-012
+
+    /** A política v4 real do envelope — overrides de centro de custo e categoria `representacao`. */
+    private Politica politicaV4Real() {
+        return Politica.de(Ingestao.lerPolitica(java.nio.file.Path.of("exemplos/politica-v4.json")));
+    }
+
+    /** Política alternativa (padrão 60/80/250) com gatilho de nota e acréscimo de viagem parametrizáveis. */
+    private Politica politicaAlternativa(String gatilho, int acrescimoPercentual) {
+        Map<String, PoliticaV4.LimiteCategoria> padrao = Map.of(
+                "alimentacao", new PoliticaV4.LimiteCategoria(Dinheiro.de("60.00"), "dia", null),
+                "transporte_urbano", new PoliticaV4.LimiteCategoria(Dinheiro.de("80.00"), "dia", null),
+                "hospedagem", new PoliticaV4.LimiteCategoria(Dinheiro.de("250.00"), "diaria", null));
+        return Politica.de(new PoliticaV4("alternativa", java.time.LocalDate.of(2026, 1, 1), "BRL",
+                padrao, Map.of(), Dinheiro.de(gatilho), BigDecimal.valueOf(acrescimoPercentual)));
+    }
+
+    /** Processa sob a política informada, com centro de custo e viagem explícitos. */
+    private List<ResultadoDespesa> processarCom(Politica politica, String centroCusto,
+                                                 boolean emViagem, Entrada.DespesaIn... despesas) {
+        Entrada entrada = new Entrada(
+                new Entrada.Colaborador("c-1", "X", centroCusto),
+                new Entrada.Periodo("2026-07",
+                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), emViagem),
+                List.of(despesas));
+        return new MotorReembolso().processar(entrada, politica);
+    }
+
+    @Test
+    @DisplayName("rn012_categoriaAusenteNoPadrao_recusada")
+    void rn012_categoriaAusenteNoPadrao_recusada() {
+        // AMB-014 / f-003: CC-SUPORTE-N2 não tem bloco na política v4 — resolve
+        // pelo padrao; representacao só existe no bloco do CC-COMERCIAL, portanto
+        // é recusada como categoria fora da política (RN-002).
+        ResultadoDespesa r = processarCom(politicaV4Real(), "CC-SUPORTE-N2", false,
+                despesa("x-1", "2026-07-16", "representacao", "Casa Trindade", "190.00")).get(0);
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, r.status());
+        assertEquals(new BigDecimal("0.00"), r.valorReembolsado().saida());
+        assertEquals(new BigDecimal("190.00"), r.valorSolicitado().saida());
+        assertEquals(List.of("Categoria fora da política"), r.motivos());
+    }
+
+    @Test
+    @DisplayName("rn012_limiteZero_naoReembolsavel")
+    void rn012_limiteZero_naoReembolsavel() {
+        // AMB-015: CC-ENG-PLATAFORMA declara hospedagem com limite 0,00
+        // ("nao reembolsavel") — recusa com motivo próprio, e a viagem NÃO
+        // transforma proibição em permissão (0 × 1,5 = 0).
+        ResultadoDespesa r = processarCom(politicaV4Real(), "CC-ENG-PLATAFORMA", true,
+                despesa("x-1", "2026-07-10", "hospedagem", "Pousada do Vale", "310.00")).get(0);
+
+        assertEquals(ResultadoDespesa.Status.RECUSADA, r.status());
+        assertEquals(new BigDecimal("0.00"), r.valorReembolsado().saida());
+        assertTrue(r.motivos().contains(MotorReembolso.MOTIVO_CATEGORIA_NAO_REEMBOLSAVEL),
+                "motivo próprio da proibição (igualdade de elemento — List.contains não é String.contains): "
+                        + r.motivos());
+    }
+
+    @Test
+    @DisplayName("amb020_semEmViagem_semAcrescimo")
+    void amb020_semEmViagem_semAcrescimo() {
+        // AMB-020 / D-003: sem `em_viagem`, o limite do CC-COMERCIAL vale como
+        // está — alimentação de 100,00 é cortada em 90,00, não em 135,00.
+        ResultadoDespesa r = processarCom(politicaV4Real(), "CC-COMERCIAL", false,
+                despesa("x-1", "2026-07-10", "alimentacao", "Rest", "100.00")).get(0);
+
+        assertEquals(ResultadoDespesa.Status.PARCIAL, r.status());
+        assertEquals(new BigDecimal("90.00"), r.valorReembolsado().saida(),
+                "limite do CC (90,00), não o ampliado em viagem (135,00)");
+    }
+
+    @Test
+    @DisplayName("rn005_gatilhoLidoDaPolitica")
+    void rn005_gatilhoLidoDaPolitica() {
+        // D-003 / RN-005: o gatilho da nota é dado da política — com gatilho
+        // 80,00: R$ 80,00 sem nota é elegível (fronteira estrita, AMB-003) e
+        // R$ 80,01 é recusada com motivo citando o gatilho vigente.
+        Politica gatilho80 = politicaAlternativa("80.00", 50);
+
+        Entrada.DespesaIn oitenta = new Entrada.DespesaIn("x-1", java.time.LocalDate.parse("2026-07-10"),
+                "hospedagem", "teste", "Hotel", "80.00", "BRL", false);
+        ResultadoDespesa r80 = processarCom(gatilho80, "CC", false, oitenta).get(0);
+        assertEquals(ResultadoDespesa.Status.APROVADA, r80.status(),
+                "exatamente o gatilho não exige nota (AMB-003)");
+        assertEquals(new BigDecimal("80.00"), r80.valorReembolsado().saida());
+
+        Entrada.DespesaIn oitentaUm = new Entrada.DespesaIn("x-2", java.time.LocalDate.parse("2026-07-10"),
+                "hospedagem", "teste", "Hotel", "80.01", "BRL", false);
+        ResultadoDespesa r81 = processarCom(gatilho80, "CC", false, oitentaUm).get(0);
+        assertEquals(ResultadoDespesa.Status.RECUSADA, r81.status());
+        assertTrue(r81.motivos().contains("Despesa acima de R$ 80,00 sem nota fiscal"),
+                "motivo dinâmico com o gatilho da política: " + r81.motivos());
+    }
+
+    @Test
+    @DisplayName("rn008_percentualLidoDaPolitica")
+    void rn008_percentualLidoDaPolitica() {
+        // D-003 / RN-008: o acréscimo de viagem é dado da política — com
+        // acréscimo 100%, alimentação de 110,00 em viagem é aprovada integral
+        // (teto 60 -> 120); sem viagem seria cortada em 60,00.
+        Politica acrescimo100 = politicaAlternativa("100.00", 100);
+
+        ResultadoDespesa emViagem = processarCom(acrescimo100, "CC", true,
+                despesa("x-1", "2026-07-10", "alimentacao", "Rest", "110.00")).get(0);
+        assertEquals(ResultadoDespesa.Status.APROVADA, emViagem.status());
+        assertEquals(new BigDecimal("110.00"), emViagem.valorReembolsado().saida(),
+                "60 × 2,0 = 120 — 110,00 cabe no teto ampliado");
+
+        ResultadoDespesa semViagem = processarCom(acrescimo100, "CC", false,
+                despesa("x-2", "2026-07-10", "alimentacao", "Rest", "110.00")).get(0);
+        assertEquals(ResultadoDespesa.Status.PARCIAL, semViagem.status());
+        assertEquals(new BigDecimal("60.00"), semViagem.valorReembolsado().saida());
     }
 }

@@ -1,13 +1,19 @@
 package com.reembolso.cli;
 
 import java.io.PrintStream;
+import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.util.Map;
 
+import com.reembolso.dominio.Dinheiro;
 import com.reembolso.io.Entrada;
 import com.reembolso.io.EscritorSaida;
 import com.reembolso.io.Ingestao;
+import com.reembolso.io.PoliticaV4;
 import com.reembolso.materializacao.Saida;
 import com.reembolso.motor.MotorReembolso;
+import com.reembolso.motor.Politica;
 
 /**
  * CLI do motor de reembolso (T-015, DT-005).
@@ -73,12 +79,31 @@ public final class Main {
         }
         try {
             Entrada entrada = Ingestao.ler(Path.of(input));
-            Saida saida = Saida.de(entrada, new MotorReembolso().processar(entrada));
+            Saida saida = Saida.de(entrada,
+                    new MotorReembolso().processar(entrada, politicaV3ComoDado()));
             EscritorSaida.escrever(saida, Path.of(output));
             return 0;
         } catch (RuntimeException e) {
             err.println("Erro: " + e.getMessage());
             return 1;
         }
+    }
+
+    /**
+     * T-019 (D-003): o motor agora exige a política como dado. Até a T-022
+     * adicionar as flags {@code --politica}/{@code --cambio}, a CLI continua
+     * aplicando a política v3 do RH — a mesma que as constantes da antiga
+     * {@code Politica} aplicavam no Dia 1 — agora codificada como dado
+     * (padrão 60/80/250, gatilho 100,00, acréscimo 50%), sem overrides de
+     * centro de custo. A T-022 substitui esta ponte pelo arquivo informado.
+     */
+    private static Politica politicaV3ComoDado() {
+        Map<String, PoliticaV4.LimiteCategoria> padrao = Map.of(
+                "alimentacao", new PoliticaV4.LimiteCategoria(Dinheiro.de("60.00"), "dia", null),
+                "transporte_urbano", new PoliticaV4.LimiteCategoria(Dinheiro.de("80.00"), "dia", null),
+                "hospedagem", new PoliticaV4.LimiteCategoria(Dinheiro.de("250.00"), "diaria", null));
+        PoliticaV4 dados = new PoliticaV4("v3", LocalDate.of(2026, 1, 1), "BRL",
+                padrao, Map.of(), Dinheiro.de("100.00"), BigDecimal.valueOf(50));
+        return Politica.de(dados);
     }
 }
