@@ -120,17 +120,17 @@
   - **Aceite:** testes `IngestaoTest`: `politicaV4_lidaEmMemoria()` (padrão 60/80/250; CC-COMERCIAL 90/150/400 + representacao 300; gatilho 100,00; acréscimo 50; vigência 2026-07-01); `cambio_lidoEmMemoria()` (USD 5,42 em 2026-07-13; EUR 6,03 em 2026-07-27); `moeda_ausente_defaultBrl()` (ausente ≡ `"BRL"` explícito); `politicaSemCampoObrigatorio_erroLegivel()` (sem `padrao` ou sem `vigencia` → erro de processamento legível, não exceção crua); JSON malformado → erro legível (padrão de T-003).
   - **Commit:**
 
-- [ ] **T-019** — RN-012: limites por centro de custo, vigência e catálogo dinâmico
+- [x] **T-019** — RN-012: limites por centro de custo, vigência e catálogo dinâmico
   - **Atende:** RN-012; AMB-014, AMB-015, AMB-020, AMB-021; rework de RN-001/RN-002 (catálogo derivado da política), RN-005 (gatilho lido da política) e RN-008 (percentual lido da política) — extensões de T-004/T-008/T-009 listadas em D-003
   - **Aceite:** testes `PoliticaTest`/`MotorReembolsoTest`: `rn012_ccComercial_overrides()` (resolve 90/150/400/representacao 300); `rn012_ccDesconhecido_resolvePadrao()` (CC-SUPORTE-N2 → 60/80/250); `rn012_categoriaAusenteNoPadrao_recusada()` (f-003: representacao com CC sem bloco → recusada "Categoria fora da política"); `rn012_categoriaAusenteNoBlocoCc_herdadoDoPadrao()` (CC-ADM, hospedagem → 250 por lançamento); `rn012_limiteZero_naoReembolsavel()` (CC-ENG-PLATAFORMA, hospedagem recusada como não reembolsável, mesmo com `em_viagem: true`); `rn012_vigenciaPosterior_erroDeProcessamento()` (política v4 + competência 2026-06 → erro, sem saída); `rn012_periodicidadeDesconhecida_erroDeProcessamento()` (`periodicidade: "mes"` → erro); `rn005_gatilhoLidoDaPolitica()` (política alternativa com gatilho 80,00: R$ 80,00 sem nota elegível, R$ 80,01 recusada); `rn008_percentualLidoDaPolitica()` (política com acréscimo 100: limite 60 → 120 em viagem); `amb020_semEmViagem_semAcrescimo()` (alimentação 100,00 BRL com nota, sem `em_viagem`, CC-COMERCIAL → parcial 90,00, não 135,00).
   - **Commit:**
 
-- [ ] **T-020** — RN-013: moeda e conversão cambial
+- [x] **T-020** — RN-013: moeda e conversão cambial
   - **Atende:** RN-013; AMB-016, AMB-017, AMB-018, AMB-019, AMB-022; rework de RN-004 (duplicata compara valor em BRL) e RN-009 (estorno em BRL); ordem da spec §8 (conversão no passo 4)
   - **Aceite:** testes `MotorReembolsoTest`: `rn013_moedaAusente_tratadaComoBrl()` (sem conversão e sem consulta de taxa); `rn013_convertePelaTaxaDataDaDespesa()` (22 EUR em 2026-07-14 → R$ 130,46); `rn013_diaSemCotacao_usaUltimaPublicada()` (30 EUR em 2026-07-18, sábado → taxa 5,96 de 2026-07-17 → R$ 178,80); `rn013_moedaSemCotacao_recusaItemLoteSegue()` (55 GBP → recusada "Moeda sem cotação disponível"; demais itens do lote processados); `rn013_semCambioFornecido_recusaMoedaEstrangeira()` (despesa em EUR sem arquivo de câmbio → recusada como sem cotação); `amb019_gatilhoNotaSobreValorConvertido()` (40 USD = R$ 220,00 sem nota → recusada por nota, e-005); `amb022_duplicataComparaValorEmBrl()` (100 USD e 548,00 BRL no mesmo dia/fornecedor/categoria → segunda recusada como duplicata da primeira).
   - **Commit:**
 
-- [ ] **T-021** — Saída multi-moeda (materialização)
+- [x] **T-021** — Saída multi-moeda (materialização)
   - **Atende:** spec §4 saída (`moeda`, `valor_original`, `valor_solicitado` em BRL, `taxa_cambio`, `data_taxa`, totais em BRL); RN-010, RN-011; extensão de T-012/T-014 (D-003)
   - **Aceite:** testes `SaidaTest`: `saida_despesaEmMoedaEstrangeira_expoeTaxaEData()` (e-004: moeda EUR, valor_original 30,00, valor_solicitado 178,80, taxa_cambio 5,96, data_taxa 2026-07-17); `saida_despesaBrl_semCamposDeTaxa()` (moeda "BRL", valor_original = valor_solicitado, sem taxa_cambio/data_taxa); `saida_despesaSemCotacao_semValorBrl()` (valor_solicitado nulo, reembolsado 0,00, motivo "Moeda sem cotação disponível", contribui 0 nos totais); `rn010_totaisEmBrlDuasCasas()` (totais somam valores em BRL com 2 casas).
   - **Commit:**

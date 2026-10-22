@@ -62,8 +62,29 @@ public final class EscritorSaida {
             ObjectNode no = JSON.objectNode();
             no.put("id", d.id());
             no.put("status", d.status());
-            no.set("valor_solicitado", JSON.numberNode(d.valorSolicitado().saida()));
+            no.put("moeda", d.moeda());
+            no.set("valor_original", JSON.numberNode(d.valorOriginal().saida()));
+            if (d.valorSolicitado() != null) {
+                no.set("valor_solicitado", JSON.numberNode(d.valorSolicitado().saida()));
+            } else {
+                // sem cotação não há valor em BRL (spec §4: nulo; item não entra nos totais)
+                no.putNull("valor_solicitado");
+            }
             no.set("valor_reembolsado", JSON.numberNode(d.valorReembolsado().saida()));
+            if (d.conversao() != null) {
+                // moeda estrangeira: taxa_cambio/data_taxa presentes — nulos quando
+                // nenhuma taxa foi aplicada (AMB-017); moeda base: campos não existem
+                if (d.conversao().taxa() != null) {
+                    no.set("taxa_cambio", JSON.numberNode(d.conversao().taxa()));
+                } else {
+                    no.putNull("taxa_cambio");
+                }
+                if (d.conversao().dataTaxa() != null) {
+                    no.put("data_taxa", d.conversao().dataTaxa().toString());
+                } else {
+                    no.putNull("data_taxa");
+                }
+            }
             ArrayNode motivos = no.putArray("motivos");
             d.motivos().forEach(motivos::add);
             despesas.add(no);
