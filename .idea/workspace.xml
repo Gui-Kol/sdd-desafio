@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-020): implementa RN-013 com conversao cambial por data e comparacao em BRL · test(T-020): adiciona testes para conversao por data recusa sem cotacao e duplicata em BRL">
-      <change beforePath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" beforeDir="false" afterPath="$PROJECT_DIR$/specs/001-motor-reembolso/tasks.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/reembolso/io/EscritorSaida.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/reembolso/io/EscritorSaida.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/reembolso/materializacao/Saida.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/reembolso/materializacao/Saida.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/com/reembolso/io/SaidaTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/tests/com/reembolso/io/SaidaTest.java" afterDir="false" />
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-021): implementa materializacao multi-moeda com taxa data e totais em BRL · test(T-021): adiciona testes em SaidaTest para exibicao de cambio e totais arredondados">
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/reembolso/cli/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/reembolso/cli/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/com/reembolso/cli/CliE2ETest.java" beforeDir="false" afterPath="$PROJECT_DIR$/tests/com/reembolso/cli/CliE2ETest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,7 +105,6 @@
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="feat(T-003): adiciona records de entrada e leitor de JSON com default false para em_viagem · test(T-003): adiciona testes em IngestaoTest validando a leitura do JSON do exemplo e tratamento de atributos ausentes" />
     <MESSAGE value="docs(sessions): salva registro exportado da sessao 01 de especificacao e desenvolvimento" />
     <MESSAGE value="feat(T-004): implementa regras de reembolso de alimentacao e testes" />
     <MESSAGE value="feat(T-005): implementa regras de transporte e testes unitarios" />
@@ -130,7 +129,8 @@
     <MESSAGE value="feat(T-018): implementa ingestao de politica v4 por centro de custo cambio e moeda · test(T-018): adiciona testes em IngestaoTest para politica v4 cambio em memoria e fallback BRL" />
     <MESSAGE value="feat(T-019): implementa RN-012 com limites por centro de custo vigencia e catalogo dinamico · test(T-019): adiciona testes para overrides por CC fallback padrao limite zero e vigencia" />
     <MESSAGE value="feat(T-020): implementa RN-013 com conversao cambial por data e comparacao em BRL · test(T-020): adiciona testes para conversao por data recusa sem cotacao e duplicata em BRL" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(T-020): implementa RN-013 com conversao cambial por data e comparacao em BRL · test(T-020): adiciona testes para conversao por data recusa sem cotacao e duplicata em BRL" />
+    <MESSAGE value="feat(T-021): implementa materializacao multi-moeda com taxa data e totais em BRL · test(T-021): adiciona testes em SaidaTest para exibicao de cambio e totais arredondados" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(T-021): implementa materializacao multi-moeda com taxa data e totais em BRL · test(T-021): adiciona testes em SaidaTest para exibicao de cambio e totais arredondados" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

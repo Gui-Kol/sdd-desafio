@@ -39,8 +39,8 @@ Se o pedido não está coberto por nenhuma task, pare e avise em vez de implemen
 
 - Linguagem: Java 17, Maven, JUnit 5, Jackson
 - Testes: `mvn test`
-- Rodar: `reembolso.cmd calcular --input X --output Y` (Windows) ou
-  `sh reembolso.sh calcular ...`; alternativa: `mvn -q exec:java -Dexec.args="calcular --input X --output Y"`
+- Rodar: `reembolso.cmd calcular --input X --politica exemplos/politica-v4.json --output Y [--cambio exemplos/cambio.json]` (Windows) ou
+  `sh reembolso.sh calcular ...`; alternativa: `mvn -q exec:java -Dexec.args="calcular --input X --politica P --output Y"`
 
 ## Convenções de código
 
