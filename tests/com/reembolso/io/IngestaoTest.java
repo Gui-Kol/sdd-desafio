@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.reembolso.dominio.Dinheiro;
 import com.reembolso.io.Ingestao.IngestaoException;
 
 /**
@@ -19,6 +21,15 @@ import com.reembolso.io.Ingestao.IngestaoException;
  *  - periodo.em_viagem ausente -> false (AMB-005)
  *  - valor preservado como string no record (DT-001)
  *  - erro legivel em JSON malformado
+ *
+ * T-018 — Ingestao da politica v4, do cambio e do campo `moeda` (D-003).
+ * Criterios de aceite:
+ *  - politicaV4_lidaEmMemoria: exemplos/politica-v4.json inteiro em memoria
+ *  - cambio_lidoEmMemoria: exemplos/cambio.json inteiro em memoria
+ *  - moeda_ausente_defaultBrl: ausente ≡ "BRL" explicito (AMB-018)
+ *  - politicaSemCampoObrigatorio_erroLegivel: sem padrao/vigencia -> erro
+ *    legivel, nao excecao crua
+ *  - JSON malformado de politica/cambio -> erro legivel (padrao da T-003)
  */
 class IngestaoTest {
 
@@ -126,5 +137,137 @@ class IngestaoTest {
         // d-014 chega como "ALIMENTACAO"; a normalizacao e decisao da T-004, aqui so preserva
         Entrada e = Ingestao.ler(java.nio.file.Path.of("exemplos/despesas-exemplo.json"));
         assertEquals("ALIMENTACAO", e.despesas().get(13).categoria());
+    }
+
+    // ---------------------------------------------------------------- T-018 (D-003)
+
+    @Test
+    @DisplayName("politicaV4_lidaEmMemoria")
+    void politicaV4_lidaEmMemoria() {
+        PoliticaV4 p = Ingestao.lerPolitica(java.nio.file.Path.of("exemplos/politica-v4.json"));
+
+        assertEquals("v4", p.versao());
+        assertEquals(LocalDate.of(2026, 7, 1), p.vigencia());
+        assertEquals("BRL", p.moedaBase());
+
+        // bloco padrao (fallback de qualquer CC sem override — RN-012, T-019)
+        assertEquals(3, p.padrao().size());
+        assertEquals(Dinheiro.de("60.00"), p.padrao().get("alimentacao").limite());
+        assertEquals("dia", p.padrao().get("alimentacao").periodicidade());
+        assertEquals(Dinheiro.de("80.00"), p.padrao().get("transporte_urbano").limite());
+        assertEquals(Dinheiro.de("250.00"), p.padrao().get("hospedagem").limite());
+        assertEquals("diaria", p.padrao().get("hospedagem").periodicidade());
+
+        // overrides por centro de custo
+        assertEquals(3, p.centrosCusto().size());
+
+        var comercial = p.centrosCusto().get("CC-COMERCIAL");
+        assertEquals(Dinheiro.de("90.00"), comercial.get("alimentacao").limite());
+        assertEquals(Dinheiro.de("150.00"), comercial.get("transporte_urbano").limite());
+        assertEquals(Dinheiro.de("400.00"), comercial.get("hospedagem").limite());
+        assertEquals(Dinheiro.de("300.00"), comercial.get("representacao").limite());
+        assertEquals("dia", comercial.get("representacao").periodicidade());
+
+        var eng = p.centrosCusto().get("CC-ENG-PLATAFORMA");
+        assertEquals(Dinheiro.de("0.00"), eng.get("hospedagem").limite());
+        assertEquals("nao reembolsavel", eng.get("hospedagem").observacao());
+
+        var adm = p.centrosCusto().get("CC-ADM");
+        assertFalse(adm.containsKey("hospedagem"),
+                "CC-ADM nao lista hospedagem — heranca do padrao e decisao da RN-012 (T-019), aqui so se registra a ausencia");
+
+        assertEquals(Dinheiro.de("100.00"), p.notaFiscalObrigatoriaAcimaDe());
+        assertEquals(0, p.acrescimoEmViagemPercentual().compareTo(BigDecimal.valueOf(50)),
+                "acrescimo de viagem: 50%");
+    }
+
+    @Test
+    @DisplayName("cambio_lidoEmMemoria")
+    void cambio_lidoEmMemoria() {
+        Cambio c = Ingestao.lerCambio(java.nio.file.Path.of("exemplos/cambio.json"));
+
+        assertEquals("BRL", c.moedaBase());
+        assertEquals(12, c.taxas().size());
+        assertEquals(0, c.taxas().get(LocalDate.of(2026, 7, 13)).get("USD").compareTo(new BigDecimal("5.42")));
+        assertEquals(0, c.taxas().get(LocalDate.of(2026, 7, 27)).get("EUR").compareTo(new BigDecimal("6.03")));
+        assertFalse(c.taxas().containsKey(LocalDate.of(2026, 7, 18)),
+                "a tabela publica so em dias uteis — sabado 2026-07-18 nao tem cotação "
+                        + "(RN-013 aplicara a ultima publicada, T-020)");
+    }
+
+    @Test
+    @DisplayName("moeda_ausente_defaultBrl")
+    void moeda_ausente_defaultBrl() {
+        // AMB-018: ausente = "BRL" (moeda base). e-010 vem sem moeda; e-001 com "BRL" explicito.
+        Entrada e = Ingestao.ler(java.nio.file.Path.of("exemplos/despesas-envelope.json"));
+        String ausente = e.despesas().stream()
+                .filter(d -> d.id().equals("e-010")).findFirst().orElseThrow().moeda();
+        String explicito = e.despesas().stream()
+                .filter(d -> d.id().equals("e-001")).findFirst().orElseThrow().moeda();
+        String estrangeira = e.despesas().stream()
+                .filter(d -> d.id().equals("e-002")).findFirst().orElseThrow().moeda();
+
+        assertEquals("BRL", ausente, "moeda ausente vira BRL");
+        assertEquals(ausente, explicito, "ausente ≡ explicito (AMB-018)");
+        assertEquals("EUR", estrangeira, "moeda informada e preservada como veio — normalizacao e do motor");
+
+        Entrada f = Ingestao.ler(java.nio.file.Path.of("exemplos/despesas-envelope-cc-desconhecido.json"));
+        assertEquals("BRL", f.despesas().stream()
+                .filter(d -> d.id().equals("f-001")).findFirst().orElseThrow().moeda());
+        assertEquals("USD", f.despesas().stream()
+                .filter(d -> d.id().equals("f-004")).findFirst().orElseThrow().moeda());
+    }
+
+    @Test
+    @DisplayName("politicaSemCampoObrigatorio_erroLegivel")
+    void politicaSemCampoObrigatorio_erroLegivel() {
+        // spec §4: padrao e vigencia sao obrigatorios. assertThrows(IngestaoException) garante
+        // erro legivel — se fosse NPE/excecao crua, o teste falharia.
+        String semPadrao = """
+            {
+              "versao": "v4",
+              "vigencia": "2026-07-01",
+              "moeda_base": "BRL",
+              "nota_fiscal_obrigatoria_acima_de": 100.00,
+              "acrescimo_em_viagem_percentual": 50
+            }
+            """;
+        IngestaoException exPadrao = assertThrows(IngestaoException.class,
+                () -> Ingestao.lerPoliticaDeString(semPadrao));
+        assertTrue(exPadrao.getMessage().contains("padrao"),
+                "mensagem deve citar o campo ausente: " + exPadrao.getMessage());
+
+        String semVigencia = """
+            {
+              "versao": "v4",
+              "moeda_base": "BRL",
+              "padrao": {},
+              "nota_fiscal_obrigatoria_acima_de": 100.00,
+              "acrescimo_em_viagem_percentual": 50
+            }
+            """;
+        IngestaoException exVigencia = assertThrows(IngestaoException.class,
+                () -> Ingestao.lerPoliticaDeString(semVigencia));
+        assertTrue(exVigencia.getMessage().contains("vigencia"),
+                "mensagem deve citar o campo ausente: " + exVigencia.getMessage());
+    }
+
+    @Test
+    @DisplayName("politicaMalformada_erroLegivel")
+    void politicaMalformada_erroLegivel() {
+        // Padrao da T-003: JSON quebrado -> IngestaoException com "JSON" na mensagem
+        IngestaoException ex = assertThrows(IngestaoException.class,
+                () -> Ingestao.lerPoliticaDeString("{ isto nao e json"));
+        assertTrue(ex.getMessage().contains("JSON"),
+                "mensagem deve dizer que e erro de JSON: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("cambioMalformado_erroLegivel")
+    void cambioMalformado_erroLegivel() {
+        IngestaoException ex = assertThrows(IngestaoException.class,
+                () -> Ingestao.lerCambioDeString("{ isto nao e json"));
+        assertTrue(ex.getMessage().contains("JSON"),
+                "mensagem deve dizer que e erro de JSON: " + ex.getMessage());
     }
 }

@@ -8,7 +8,9 @@ import java.util.List;
  *
  * <p>`valor` é preservado como String bruta (DT-001): o parser JSON não pode
  * arredondar antes de `Dinheiro.de(...)` aplicar HALF_UP. `em_viagem` é boolean
- * com default false (AMB-005).
+ * com default false (AMB-005). `moeda` é o código da moeda do valor informado,
+ * com default "BRL" quando ausente (AMB-005 para `em_viagem`, AMB-018 para
+ * `moeda`) — preservada como veio, sem normalização, que é decisão do motor.
  */
 public record Entrada(Colaborador colaborador, Periodo periodo, List<DespesaIn> despesas) {
 
@@ -24,6 +26,7 @@ public record Entrada(Colaborador colaborador, Periodo periodo, List<DespesaIn> 
                             String descricao,
                             String fornecedor,
                             String valor,
+                            String moeda,
                             boolean temNotaFiscal) {
     }
 }

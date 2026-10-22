@@ -151,7 +151,7 @@ class MotorReembolsoTest {
 
     private ResultadoDespesa processarUnica(String id, String data, String categoria, String valor) {
         Entrada.DespesaIn despesa = new Entrada.DespesaIn(id,
-                java.time.LocalDate.parse(data), categoria, "teste", "Fornecedor", valor, true);
+                java.time.LocalDate.parse(data), categoria, "teste", "Fornecedor", valor, "BRL", true);
         Entrada entrada = new Entrada(
                 new Entrada.Colaborador("c-1", "X", "CC"),
                 new Entrada.Periodo("2026-07",
@@ -305,9 +305,9 @@ class MotorReembolsoTest {
         // RN-004 + §7 (linha d-004): diferenca visivel de 1 centavo NAO e "o mesmo
         // valor" — 100,00 e 100,01 sao despesas distintas (d-004 morre por nota).
         Entrada.DespesaIn a = new Entrada.DespesaIn("x-1", java.time.LocalDate.of(2026, 7, 6),
-                "transporte_urbano", "teste", "TaxiApp", "100.00", false);
+                "transporte_urbano", "teste", "TaxiApp", "100.00", "BRL", false);
         Entrada.DespesaIn b = new Entrada.DespesaIn("x-2", java.time.LocalDate.of(2026, 7, 6),
-                "transporte_urbano", "teste", "TaxiApp", "100.01", false);
+                "transporte_urbano", "teste", "TaxiApp", "100.01", "BRL", false);
         List<ResultadoDespesa> rs = processar(a, b);
         assertEquals(ResultadoDespesa.Status.PARCIAL, rs.get(0).status(),
                 "100,00 sem nota passa na RN-005 e e cortada no teto diario de 80,00 (RN-006)");
@@ -384,7 +384,7 @@ class MotorReembolsoTest {
     private Entrada.DespesaIn despesa(String id, String data, String categoria,
                                       String fornecedor, String valor) {
         return new Entrada.DespesaIn(id, java.time.LocalDate.parse(data), categoria,
-                "teste", fornecedor, valor, true);
+                "teste", fornecedor, valor, "BRL", true);
     }
 
     private List<ResultadoDespesa> processar(Entrada.DespesaIn... despesas) {
@@ -445,7 +445,7 @@ class MotorReembolsoTest {
     void rn005_acimaDeCemComNota_elegivel() {
         // RN-005: nota presente desarma a exigencia, qualquer que seja o valor
         Entrada.DespesaIn comNota = new Entrada.DespesaIn("x-1",
-                java.time.LocalDate.of(2026, 7, 10), "hospedagem", "teste", "Hotel", "500.00", true);
+                java.time.LocalDate.of(2026, 7, 10), "hospedagem", "teste", "Hotel", "500.00", "BRL", true);
         List<ResultadoDespesa> rs = processar(comNota);
         org.junit.jupiter.api.Assertions.assertNotEquals(ResultadoDespesa.Status.RECUSADA, rs.get(0).status(),
                 "com nota, 500,00 nao e recusada por RN-005");
@@ -478,7 +478,7 @@ class MotorReembolsoTest {
 
     private ResultadoDespesa processarUnicaSemNota(String id, String data, String categoria, String valor) {
         Entrada.DespesaIn despesa = new Entrada.DespesaIn(id,
-                java.time.LocalDate.parse(data), categoria, "teste", "Fornecedor", valor, false);
+                java.time.LocalDate.parse(data), categoria, "teste", "Fornecedor", valor, "BRL", false);
         Entrada entrada = new Entrada(
                 new Entrada.Colaborador("c-1", "X", "CC"),
                 new Entrada.Periodo("2026-07",
@@ -761,7 +761,7 @@ class MotorReembolsoTest {
     void rn002_todaCategoriaForaDoCatalogo_recusaIntegral() {
         // RN-002: recusa e integral (reembolso zero), qualquer que seja o valor
         Entrada.DespesaIn coworking = new Entrada.DespesaIn("x-1",
-                java.time.LocalDate.of(2026, 7, 10), "coworking", "teste", "HubOffice", "1500.99", true);
+                java.time.LocalDate.of(2026, 7, 10), "coworking", "teste", "HubOffice", "1500.99", "BRL", true);
         Entrada entrada = new Entrada(
                 new Entrada.Colaborador("c-1", "X", "CC"),
                 new Entrada.Periodo("2026-07", java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31), false),

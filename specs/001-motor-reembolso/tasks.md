@@ -115,7 +115,7 @@
 > spec (hospedagem multi-diária) não abre task: D-002 foi reafirmada pelo
 > envelope (periodicidade `diaria`) e e-007 é afirmada no E2E da T-022.
 
-- [ ] **T-018** — Ingestão da política v4 e do câmbio + campo `moeda` (io/ingestao)
+- [x] **T-018** — Ingestão da política v4 e do câmbio + campo `moeda` (io/ingestao)
   - **Atende:** spec §4 entrada (arquivos de política e câmbio); AMB-018 (default `BRL` na leitura); base de RN-012/RN-013; extensão de T-003 (D-003)
   - **Aceite:** testes `IngestaoTest`: `politicaV4_lidaEmMemoria()` (padrão 60/80/250; CC-COMERCIAL 90/150/400 + representacao 300; gatilho 100,00; acréscimo 50; vigência 2026-07-01); `cambio_lidoEmMemoria()` (USD 5,42 em 2026-07-13; EUR 6,03 em 2026-07-27); `moeda_ausente_defaultBrl()` (ausente ≡ `"BRL"` explícito); `politicaSemCampoObrigatorio_erroLegivel()` (sem `padrao` ou sem `vigencia` → erro de processamento legível, não exceção crua); JSON malformado → erro legível (padrão de T-003).
   - **Commit:**
