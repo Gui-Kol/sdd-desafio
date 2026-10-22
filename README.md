@@ -48,23 +48,23 @@ como regras RN-001..RN-013:
 
 ---
 
-## Pré-requisitos
+## Instalação
 
-- **JDK 17** ou superior — verifique com `java -version`
-- **Maven 3.8+** — verifique com `mvn -version`
+1. Clone o repositório e entre na pasta do projeto.
+2. Instale o **JDK 17** ou superior — verifique com `java -version` (deve
+   reportar 17 ou mais).
+3. Instale o **Maven** 3.8+ — verifique com `mvn -version`.
+4. Nenhum outro passo: as dependências (JUnit 5 e Jackson) são baixadas pelo
+   Maven automaticamente na primeira execução de qualquer comando `mvn`
+   (compilação ou teste).
 
-Nenhuma outra instalação é necessária: as dependências (JUnit 5 e Jackson)
-são baixadas pelo Maven na primeira compilação.
-
----
-
-## Como compilar
+Sanidade da instalação (compila sem testes):
 
 ```bash
 mvn clean compile
 ```
 
-Para gerar também o classpath cacheado (usado pelos wrappers):
+Para gerar também o classpath cacheado (usado pelos wrappers da CLI):
 
 ```bash
 mvn -q compile -DskipTests
@@ -138,20 +138,31 @@ despesa cai num sábado sem cotação e usa a última taxa publicada, RN-013):
 
 ## Como testar
 
-Rodar a suíte completa de testes automatizados:
+O comando exato para rodar a suíte completa de testes automatizados, na raiz
+do projeto:
 
 ```bash
 mvn test
 ```
 
-Isso compila o projeto e executa todas as camadas da suíte JUnit 5 (em
+Ele compila o projeto e executa todas as camadas da suíte JUnit 5 (em
 `tests/`): testes unitários do motor e dos tipos de domínio (ex.:
-`MotorReembolsoTest`, `DinheiroTest`, `PoliticaTest`), testes de integração do
-JSON (`SaidaTest`), e os ponta a ponta da CLI (`CliE2ETest`) — incluindo o E2E
-dourado do Dia 1 (`ExemploE2ETest`, `total_reembolsado = 585,43` sob a
-política v3 como dado) e o E2E dourado dos envelopes do Dia 2
-(`EnvelopeE2ETest`, com a política v4 e o câmbio reais). Ao final você deve ver
-**BUILD SUCCESS**.
+`MotorReembolsoTest`, `DinheiroTest`, `PoliticaTest`), testes de integração
+do JSON (`IngestaoTest`, `SaidaTest`) e os ponta a ponta da CLI
+(`CliE2ETest`) — incluindo o E2E dourado do Dia 1 (`ExemploE2ETest`,
+`total_reembolsado = 585,43` sob a política v3 como dado) e o E2E dourado
+dos envelopes do Dia 2 (`EnvelopeE2ETest`, com a política v4 e o câmbio
+reais).
+
+Resultado esperado no fechamento do desafio — verifique estas duas linhas:
+
+```
+Tests run: 122, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Se qualquer número for outro, a suíte está quebrada: nenhum commit deve sair
+com `mvn test` vermelho.
 
 ---
 

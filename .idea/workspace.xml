@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="feat(T-021): implementa materializacao multi-moeda com taxa data e totais em BRL · test(T-021): adiciona testes em SaidaTest para exibicao de cambio e totais arredondados">
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+    <list default="true" id="7ff2a9f7-3552-4e26-9f46-d8e170bf2899" name="Changes" comment="docs(sessions): salva registro exportado da sessao 05 do envelope do Dia 2">
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/reembolso/cli/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/reembolso/cli/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/com/reembolso/cli/CliE2ETest.java" beforeDir="false" afterPath="$PROJECT_DIR$/tests/com/reembolso/cli/CliE2ETest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/RELATORIO.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/RELATORIO.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,8 +103,6 @@
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="docs(sessions): salva registro exportado da sessao 01 de especificacao e desenvolvimento" />
-    <MESSAGE value="feat(T-004): implementa regras de reembolso de alimentacao e testes" />
     <MESSAGE value="feat(T-005): implementa regras de transporte e testes unitarios" />
     <MESSAGE value="feat(T-006): implementa regras de hospedagem e testes unitarios" />
     <MESSAGE value="feat(T-007): implementa validacoes globais e travas de comprovante" />
@@ -130,7 +126,9 @@
     <MESSAGE value="feat(T-019): implementa RN-012 com limites por centro de custo vigencia e catalogo dinamico · test(T-019): adiciona testes para overrides por CC fallback padrao limite zero e vigencia" />
     <MESSAGE value="feat(T-020): implementa RN-013 com conversao cambial por data e comparacao em BRL · test(T-020): adiciona testes para conversao por data recusa sem cotacao e duplicata em BRL" />
     <MESSAGE value="feat(T-021): implementa materializacao multi-moeda com taxa data e totais em BRL · test(T-021): adiciona testes em SaidaTest para exibicao de cambio e totais arredondados" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(T-021): implementa materializacao multi-moeda com taxa data e totais em BRL · test(T-021): adiciona testes em SaidaTest para exibicao de cambio e totais arredondados" />
+    <MESSAGE value="feat(T-022): estende CLI com flags de politica e cambio e atualiza documentacao · test(T-022): adiciona testes E2E dourados para os dois arquivos de exemplo do envelope" />
+    <MESSAGE value="docs(sessions): salva registro exportado da sessao 05 do envelope do Dia 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="docs(sessions): salva registro exportado da sessao 05 do envelope do Dia 2" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
