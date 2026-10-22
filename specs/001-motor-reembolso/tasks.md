@@ -105,11 +105,40 @@
 
 ---
 
-## Fase 5 — Envelope (criar no Dia 2)
+## Fase 5 — Envelope do Dia 2: política v4, centro de custo e multi-moeda
 
-<Novas tasks a partir da mudança de requisito. Numeração continua de onde parou —
-não reinicie e não renumere as antigas: a numeração é o eixo da rastreabilidade.
-Ponto de atenção já sinalizado na spec §10: hospedagem multi-diária.>
+> Origem: envelope lacrado do Dia 2, absorvido pela spec v2.0 e registrado em
+> D-003 (`DECISIONS.md`). Numeração continua de T-018; as tasks anteriores não
+> mudam — suas extensões obrigatórias (T-003, T-004, T-006, T-008, T-009,
+> T-010, T-011, T-012, T-014, T-015, listadas em D-003) são absorvidas pelos
+> testes desta fase, sem reescrever histórico. O ponto de atenção do §10 da
+> spec (hospedagem multi-diária) não abre task: D-002 foi reafirmada pelo
+> envelope (periodicidade `diaria`) e e-007 é afirmada no E2E da T-022.
+
+- [ ] **T-018** — Ingestão da política v4 e do câmbio + campo `moeda` (io/ingestao)
+  - **Atende:** spec §4 entrada (arquivos de política e câmbio); AMB-018 (default `BRL` na leitura); base de RN-012/RN-013; extensão de T-003 (D-003)
+  - **Aceite:** testes `IngestaoTest`: `politicaV4_lidaEmMemoria()` (padrão 60/80/250; CC-COMERCIAL 90/150/400 + representacao 300; gatilho 100,00; acréscimo 50; vigência 2026-07-01); `cambio_lidoEmMemoria()` (USD 5,42 em 2026-07-13; EUR 6,03 em 2026-07-27); `moeda_ausente_defaultBrl()` (ausente ≡ `"BRL"` explícito); `politicaSemCampoObrigatorio_erroLegivel()` (sem `padrao` ou sem `vigencia` → erro de processamento legível, não exceção crua); JSON malformado → erro legível (padrão de T-003).
+  - **Commit:**
+
+- [ ] **T-019** — RN-012: limites por centro de custo, vigência e catálogo dinâmico
+  - **Atende:** RN-012; AMB-014, AMB-015, AMB-020, AMB-021; rework de RN-001/RN-002 (catálogo derivado da política), RN-005 (gatilho lido da política) e RN-008 (percentual lido da política) — extensões de T-004/T-008/T-009 listadas em D-003
+  - **Aceite:** testes `PoliticaTest`/`MotorReembolsoTest`: `rn012_ccComercial_overrides()` (resolve 90/150/400/representacao 300); `rn012_ccDesconhecido_resolvePadrao()` (CC-SUPORTE-N2 → 60/80/250); `rn012_categoriaAusenteNoPadrao_recusada()` (f-003: representacao com CC sem bloco → recusada "Categoria fora da política"); `rn012_categoriaAusenteNoBlocoCc_herdadoDoPadrao()` (CC-ADM, hospedagem → 250 por lançamento); `rn012_limiteZero_naoReembolsavel()` (CC-ENG-PLATAFORMA, hospedagem recusada como não reembolsável, mesmo com `em_viagem: true`); `rn012_vigenciaPosterior_erroDeProcessamento()` (política v4 + competência 2026-06 → erro, sem saída); `rn012_periodicidadeDesconhecida_erroDeProcessamento()` (`periodicidade: "mes"` → erro); `rn005_gatilhoLidoDaPolitica()` (política alternativa com gatilho 80,00: R$ 80,00 sem nota elegível, R$ 80,01 recusada); `rn008_percentualLidoDaPolitica()` (política com acréscimo 100: limite 60 → 120 em viagem); `amb020_semEmViagem_semAcrescimo()` (alimentação 100,00 BRL com nota, sem `em_viagem`, CC-COMERCIAL → parcial 90,00, não 135,00).
+  - **Commit:**
+
+- [ ] **T-020** — RN-013: moeda e conversão cambial
+  - **Atende:** RN-013; AMB-016, AMB-017, AMB-018, AMB-019, AMB-022; rework de RN-004 (duplicata compara valor em BRL) e RN-009 (estorno em BRL); ordem da spec §8 (conversão no passo 4)
+  - **Aceite:** testes `MotorReembolsoTest`: `rn013_moedaAusente_tratadaComoBrl()` (sem conversão e sem consulta de taxa); `rn013_convertePelaTaxaDataDaDespesa()` (22 EUR em 2026-07-14 → R$ 130,46); `rn013_diaSemCotacao_usaUltimaPublicada()` (30 EUR em 2026-07-18, sábado → taxa 5,96 de 2026-07-17 → R$ 178,80); `rn013_moedaSemCotacao_recusaItemLoteSegue()` (55 GBP → recusada "Moeda sem cotação disponível"; demais itens do lote processados); `rn013_semCambioFornecido_recusaMoedaEstrangeira()` (despesa em EUR sem arquivo de câmbio → recusada como sem cotação); `amb019_gatilhoNotaSobreValorConvertido()` (40 USD = R$ 220,00 sem nota → recusada por nota, e-005); `amb022_duplicataComparaValorEmBrl()` (100 USD e 548,00 BRL no mesmo dia/fornecedor/categoria → segunda recusada como duplicata da primeira).
+  - **Commit:**
+
+- [ ] **T-021** — Saída multi-moeda (materialização)
+  - **Atende:** spec §4 saída (`moeda`, `valor_original`, `valor_solicitado` em BRL, `taxa_cambio`, `data_taxa`, totais em BRL); RN-010, RN-011; extensão de T-012/T-014 (D-003)
+  - **Aceite:** testes `SaidaTest`: `saida_despesaEmMoedaEstrangeira_expoeTaxaEData()` (e-004: moeda EUR, valor_original 30,00, valor_solicitado 178,80, taxa_cambio 5,96, data_taxa 2026-07-17); `saida_despesaBrl_semCamposDeTaxa()` (moeda "BRL", valor_original = valor_solicitado, sem taxa_cambio/data_taxa); `saida_despesaSemCotacao_semValorBrl()` (valor_solicitado nulo, reembolsado 0,00, motivo "Moeda sem cotação disponível", contribui 0 nos totais); `rn010_totaisEmBrlDuasCasas()` (totais somam valores em BRL com 2 casas).
+  - **Commit:**
+
+- [ ] **T-022** — CLI com `--politica`/`--cambio` + E2E dourado dos envelopes
+  - **Atende:** spec §9 (critérios do envelope); interface da CLI estendida (extensão de T-015/T-016, D-003); integração AMB-014..AMB-022
+  - **Aceite:** `CliE2ETest`: `calcular --input exemplos/despesas-envelope.json --politica exemplos/politica-v4.json --cambio exemplos/cambio.json --output out.json` termina com código 0 e gera o arquivo; sem `--politica` → código 2 com ajuda; sem `--cambio` com despesa em moeda ≠ BRL → lote processado, itens sem cotação recusados (RN-013). `EnvelopeE2ETest`: processa `despesas-envelope.json` e afirma e-001 parcial 300,00; e-002 parcial 90,00 (valor BRL 130,46, taxa 5,93); e-003 aprovada 85,26; e-004 parcial 90,00 (taxa 5,96 de 2026-07-17); e-005 recusada por nota; e-006 recusada sem cotação; e-007 parcial 400,00; e-008 parcial 90,00; e-009 recusada por categoria; e-010 aprovada 88,00; `total_solicitado` 2457,52 e `total_reembolsado` 1143,26. Processa `despesas-envelope-cc-desconhecido.json` e afirma f-001 aprovada 58,00; f-002 parcial 250,00; f-003 recusada; f-004 aprovada 65,76; totais 623,76 / 373,76. README atualizado com os flags novos (`DocsTest` continua verde).
+  - **Commit:**
 
 ---
 
@@ -144,3 +173,14 @@ exatamente a matriz que a correção vai montar.
 | AMB-011 | T-002 | `DinheiroTest.de_33333_vira_3333` |
 | AMB-012 | T-010 | `rn006_recusadaNaoGastaCota` |
 | AMB-013 | T-013 | `amb013_sabadoPlantao_elegivel` |
+| RN-012 | T-019 | `rn012_ccDesconhecido_resolvePadrao`, `rn012_categoriaAusenteNoPadrao_recusada`, `rn012_limiteZero_naoReembolsavel`, `rn012_vigenciaPosterior_erroDeProcessamento` |
+| RN-013 | T-018, T-020 | `IngestaoTest.moeda_ausente_defaultBrl`, `rn013_convertePelaTaxaDataDaDespesa`, `rn013_moedaSemCotacao_recusaItemLoteSegue` |
+| AMB-014 | T-019 | `rn012_ccDesconhecido_resolvePadrao`, `rn012_categoriaAusenteNoPadrao_recusada` |
+| AMB-015 | T-019 | `rn012_categoriaAusenteNoBlocoCc_herdadoDoPadrao`, `rn012_limiteZero_naoReembolsavel` |
+| AMB-016 | T-020 | `rn013_diaSemCotacao_usaUltimaPublicada` |
+| AMB-017 | T-020 | `rn013_moedaSemCotacao_recusaItemLoteSegue`, `rn013_semCambioFornecido_recusaMoedaEstrangeira` |
+| AMB-018 | T-018, T-020 | `IngestaoTest.moeda_ausente_defaultBrl`, `rn013_moedaAusente_tratadaComoBrl` |
+| AMB-019 | T-020 | `amb019_gatilhoNotaSobreValorConvertido` |
+| AMB-020 | T-019, T-022 | `amb020_semEmViagem_semAcrescimo`, `EnvelopeE2ETest` (e-002 parcial 90,00) |
+| AMB-021 | T-019 | `rn012_vigenciaPosterior_erroDeProcessamento` |
+| AMB-022 | T-020 | `amb022_duplicataComparaValorEmBrl` |
